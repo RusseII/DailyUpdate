@@ -17,4 +17,4 @@ You should never do this by hand. This is called daily by an AWS cloudwatch even
 It sends the update to `The Whole Family` group chat.
 
 
-If you ever get a `500` response, that is a bug. Please report to [http://t.me/russeii](http://t.me/russeii)
+If you ever get a `500` response, that is a bug. Please [message me](http://t.me/russeii) on telegram.
