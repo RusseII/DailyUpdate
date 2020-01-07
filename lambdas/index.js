@@ -80,38 +80,40 @@ const whatTelegramMessageToSend = async db => {
 };
 
 const executeMongo = async (event, context, callback) => {
-  console.log(event)
-  context.callbackWaitsForEmptyEventLoop = false;
+  console.log(event);
 
-  if (event.queryStringParameters && event.queryStringParameters.update === '') {
-    const resp = {
-      statusCode: 200,
-      body: JSON.stringify({ message: 'Please type your update in the URL bar after the equal sign.' }),
-    };
-    callback(null, resp)
-  }
   // eslint-disable-next-line no-param-reassign
+  context.callbackWaitsForEmptyEventLoop = false;
   const db = await connectToDatabase(MONGODB_URI);
 
   if (event.queryStringParameters && event.queryStringParameters.update) {
-    const { update } = event.queryStringParameters;  
+    const { update } = event.queryStringParameters;
     await addDailyUpdate(db, update).catch(err => callback(err));
     const resp = {
       statusCode: 200,
       body: JSON.stringify({ message: 'Update submitted succesfully' }),
     };
     callback(null, resp);
-  } else {
-    if (event.queryStringParameters && event.queryStringParameters.send === '1') {
+  }
+
+  if (event.queryStringParameters && event.queryStringParameters.send === '1') {
     const tgResponse = await whatTelegramMessageToSend(db);
     console.log(tgResponse);
     const resp = {
       statusCode: 200,
-      body: JSON.stringify({ message: 'Message sent succesfully!' })
-    }
+      body: JSON.stringify({ message: 'Message sent succesfully!' }),
+    };
     callback(null, resp);
-    // }
   }
+
+  const resp = {
+    statusCode: 200,
+    body: JSON.stringify({
+      message:
+        'Nothing happened. To update your message of the day please add your update after the equal sign. Example: api.russell.work/daily_update?update=Hello here is my update today!',
+    }),
+  };
+  callback(null, resp);
 };
 
 module.exports.handler = executeMongo;
