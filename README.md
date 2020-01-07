@@ -15,3 +15,6 @@ Everytime you put and update, it adds the update to the database. When the `send
 #### Send the update:
 You should never do this by hand. This is called daily by an AWS cloudwatch event.
 It sends the update to `The Whole Family` group chat.
+
+
+If you ever get a `500` response, that is a bug. Please report to [http://t.me/russeii](http://t.me/russeii)
