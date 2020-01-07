@@ -80,12 +80,21 @@ const whatTelegramMessageToSend = async db => {
 };
 
 const executeMongo = async (event, context, callback) => {
-  // eslint-disable-next-line no-param-reassign
+  console.log(event)
   context.callbackWaitsForEmptyEventLoop = false;
+
+  if (event.queryStringParameters && event.queryStringParameters.update === '') {
+    const resp = {
+      statusCode: 200,
+      body: JSON.stringify({ message: 'Please type your update in the URL bar after the equal sign.' }),
+    };
+    callback(null, resp)
+  }
+  // eslint-disable-next-line no-param-reassign
   const db = await connectToDatabase(MONGODB_URI);
 
   if (event.queryStringParameters && event.queryStringParameters.update) {
-    const { update } = event.queryStringParameters;
+    const { update } = event.queryStringParameters;  
     await addDailyUpdate(db, update).catch(err => callback(err));
     const resp = {
       statusCode: 200,
@@ -93,10 +102,14 @@ const executeMongo = async (event, context, callback) => {
     };
     callback(null, resp);
   } else {
-    // if (event.queryStringParameters && event.queryStringParameters.send === '1') {
+    if (event.queryStringParameters && event.queryStringParameters.send === '1') {
     const tgResponse = await whatTelegramMessageToSend(db);
     console.log(tgResponse);
-    callback(null, 'Message Successfully Sent!');
+    const resp = {
+      statusCode: 200,
+      body: JSON.stringify({ message: 'Message sent succesfully!' })
+    }
+    callback(null, resp);
     // }
   }
 };
