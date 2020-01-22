@@ -7,8 +7,12 @@ const MONGODB_URI = process.env.RUSSELL_WORK_MONGODB_URI;
 
 let cachedDb = null;
 const timestamp = () => new Date().toString();
+let lastMessage = 'Uh oh, James decided not to post an update today :(';
+const wholeGroupChatId = '-1001341192052';
+const reminderChatId = '-100370368978';
 
-async function connectToDatabase(uri) {
+async function connectToDatabase() {
+  const uri = MONGODB_URI;
   console.log('=> connect to database');
 
   if (cachedDb) {
@@ -54,17 +58,16 @@ async function getLastDbEntry(db) {
     });
   console.log(lastUpdate);
 
-  let lastMessage = 'Uh oh, Emerson decided not to post an update today :(';
   if (lastUpdate && lastUpdate.length > 0) {
-    lastMessage = `Emerson: ${lastUpdate[0].dailyUpdate}`;
+    lastMessage = `James: ${lastUpdate[0].dailyUpdate}`;
   }
 
   return lastMessage;
 }
 
-const sendTelegramMsg = async text => {
+const sendTelegramMsg = async (text, chatId) => {
   const headers = { 'Content-Type': 'application/json' };
-  const msg = { text, chat_id: '-1001341192052' };
+  const msg = { text, chat_id: chatId };
   console.log(text);
   const resp = await fetch(
     `https://api.telegram.org/bot${process.env.GATES_ONLINE_SERVER_BOT_KEY}/sendMessage`,
@@ -75,8 +78,16 @@ const sendTelegramMsg = async text => {
 };
 
 const whatTelegramMessageToSend = async db => {
-  const lastMessage = await getLastDbEntry(db);
-  return sendTelegramMsg(lastMessage);
+  const msg = await getLastDbEntry(db);
+  return sendTelegramMsg(msg, wholeGroupChatId);
+};
+
+const sendReminder = async db => {
+  const msg = await getLastDbEntry(db);
+  if (lastMessage === msg) {
+    return sendTelegramMsg('Uh oh, better post a reminder soon!', reminderChatId);
+  }
+  return null;
 };
 
 const executeMongo = async (event, context, callback) => {
@@ -84,9 +95,9 @@ const executeMongo = async (event, context, callback) => {
 
   // eslint-disable-next-line no-param-reassign
   context.callbackWaitsForEmptyEventLoop = false;
-  const db = await connectToDatabase(MONGODB_URI);
 
   if (event.queryStringParameters && event.queryStringParameters.update) {
+    const db = await connectToDatabase();
     const { update } = event.queryStringParameters;
     await addDailyUpdate(db, update).catch(err => callback(err));
     const resp = {
@@ -97,11 +108,23 @@ const executeMongo = async (event, context, callback) => {
   }
 
   if (event.queryStringParameters && event.queryStringParameters.send === '1') {
+    const db = await connectToDatabase();
     const tgResponse = await whatTelegramMessageToSend(db);
     console.log(tgResponse);
     const resp = {
       statusCode: 200,
       body: JSON.stringify({ message: 'Message sent succesfully!' }),
+    };
+    callback(null, resp);
+  }
+
+  if (event.queryStringParameters && event.queryStringParameters.reminder === '1') {
+    const db = await connectToDatabase();
+    const tgResponse = await sendReminder(db);
+    console.log(tgResponse);
+    const resp = {
+      statusCode: 200,
+      body: JSON.stringify({ message: 'Reminder Successful!' }),
     };
     callback(null, resp);
   }
