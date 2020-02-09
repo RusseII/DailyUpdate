@@ -103,7 +103,7 @@ const executeMongo = async (event, context, callback) => {
     await addDailyUpdate(db, update).catch(err => callback(err));
     const resp = {
       statusCode: 200,
-      body: JSON.stringify({ message: `Thanks, ${person}! Your update:\n\n ${update}\n\n has been saved succesfully` }),
+      body: JSON.stringify({ message: `Thanks, ${person}! Your update:\n\n ${update}\n\n has been saved.` }),
     };
     callback(null, resp);
   }
