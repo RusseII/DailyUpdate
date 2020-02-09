@@ -86,7 +86,7 @@ const whatTelegramMessageToSend = async db => {
 const sendReminder = async db => {
   const msg = await getLastDbEntry(db);
   if (lastMessage === msg) {
-    return sendTelegramMsg('Friendly reminder, ${person}, you better post an update soon!', reminderChatId);
+    return sendTelegramMsg(`Friendly reminder, ${person}, you better post an update soon!`, reminderChatId);
   }
   return null;
 };
