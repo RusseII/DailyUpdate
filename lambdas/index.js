@@ -7,10 +7,10 @@ const MONGODB_URI = process.env.RUSSELL_WORK_MONGODB_URI;
 
 let cachedDb = null;
 const timestamp = () => new Date().toString();
-const person = 'Julie';
+const person = 'Matt';
 let lastMessage = `Uh oh, ${person} decided not to post an update today :(`;
 const wholeGroupChatId = '-1001341192052';
-const reminderChatId = '-100370368978';
+const reminderChatId = '-1001341192052';
 
 async function connectToDatabase() {
   const uri = MONGODB_URI;
@@ -86,7 +86,10 @@ const whatTelegramMessageToSend = async db => {
 const sendReminder = async db => {
   const msg = await getLastDbEntry(db);
   if (lastMessage === msg) {
-    return sendTelegramMsg(`Friendly reminder, ${person}, you better post an update soon!`, reminderChatId);
+    return sendTelegramMsg(
+      `Friendly reminder, ${person}, you better post an update soon!`,
+      reminderChatId
+    );
   }
   return null;
 };
@@ -103,7 +106,9 @@ const executeMongo = async (event, context, callback) => {
     await addDailyUpdate(db, update).catch(err => callback(err));
     const resp = {
       statusCode: 200,
-      body: JSON.stringify({ message: `Thanks, ${person}! Your update:\n\n ${update}\n\n has been saved.` }),
+      body: JSON.stringify({
+        message: `Thanks, ${person}! Your update:\n\n ${update}\n\n has been saved.`,
+      }),
     };
     callback(null, resp);
   }
