@@ -95,8 +95,6 @@ const sendReminder = async db => {
 };
 
 const executeMongo = async (event, context, callback) => {
-  console.log(event);
-
   // eslint-disable-next-line no-param-reassign
   context.callbackWaitsForEmptyEventLoop = false;
 
@@ -106,9 +104,7 @@ const executeMongo = async (event, context, callback) => {
     await addDailyUpdate(db, update).catch(err => callback(err));
     const resp = {
       statusCode: 200,
-      body: JSON.stringify({
-        message: `Thanks, ${person}! Your update:\n\n ${update}\n\n has been saved.`,
-      }),
+      body: `Thanks, ${person}! Your update has been saved. ${update}`,
     };
     callback(null, resp);
   }
