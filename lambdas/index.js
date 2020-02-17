@@ -10,7 +10,7 @@ const timestamp = () => new Date().toString();
 const person = 'Matt';
 let lastMessage = `Uh oh, ${person} decided not to post an update today :(`;
 const wholeGroupChatId = '-1001341192052';
-const reminderChatId = '-100370368978';
+const reminderChatId = '-1001341192052';
 
 async function connectToDatabase() {
   const uri = MONGODB_URI;
