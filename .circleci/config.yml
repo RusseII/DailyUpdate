@@ -15,5 +15,8 @@ jobs:
       # - image: circleci/mongo:3.4.4
 
     steps:
+      - run: curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+      - run: unzip awscliv2.zip
+      - run: sudo ./aws/install
       - checkout
       - run: cd lambdas && yarn deploy
