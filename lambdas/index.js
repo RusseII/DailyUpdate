@@ -7,7 +7,7 @@ const MONGODB_URI = process.env.RUSSELL_WORK_MONGODB_URI;
 
 let cachedDb = null;
 const timestamp = () => new Date().toString();
-const person = 'Matt';
+const person = 'James';
 let lastMessage = `Uh oh, ${person} decided not to post an update today :(`;
 const wholeGroupChatId = '-1001341192052';
 const reminderChatId = '-1001341192052';
