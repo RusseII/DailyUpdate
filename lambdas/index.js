@@ -108,6 +108,13 @@ const sendReminder = async db => {
   return null;
 };
 
+const sendNewPerson = async db => {
+  return sendTelegramMsg(
+    `A new person has been chosen: ${getRandomPerson()}`,
+    reminderChatId
+  );
+};
+
 const executeMongo = async (event, context, callback) => {
   // eslint-disable-next-line no-param-reassign
   context.callbackWaitsForEmptyEventLoop = false;
@@ -130,6 +137,15 @@ const executeMongo = async (event, context, callback) => {
       const resp = {
         statusCode: 200,
         body: JSON.stringify({ message: 'Message sent succesfully!' }),
+      };
+      return callback(null, resp);
+    }
+
+    if (roll === '1') {
+      await sendNewPerson(db);
+      const resp = {
+        statusCode: 200,
+        body: JSON.stringify({ message: 'Roll sent!' }),
       };
       return callback(null, resp);
     }
