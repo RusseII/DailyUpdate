@@ -9,16 +9,16 @@ const wholeGroupChatId = '-1001341192052';
 const reminderChatId = '-1001341192052';
 const timestamp = () => new Date().toString();
 const persons = [
-  'Matt',
-  'Peter',
-  'Emerson',
-  'Kyle',
-  'Jack',
-  'James',
-  'Julie',
-  'Russell',
-  'Grace',
-  'Aaron',
+  'Matt @geczy',
+  'Peter @sc4s2cg',
+  'Emerson @memerson',
+  'Kyle @sveyn',
+  'Jack @ti0py',
+  'James @cr0wmium',
+  'Julie @ju1ie',
+  'Russell @RusseII',
+  'Grace @gdog5',
+  'Aaron @gatesyq',
 ];
 
 function getRandomPerson() {
