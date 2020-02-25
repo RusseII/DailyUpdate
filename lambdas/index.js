@@ -120,19 +120,17 @@ const executeMongo = async (event, context, callback) => {
   context.callbackWaitsForEmptyEventLoop = false;
 
   if (event.queryStringParameters) {
-    const { update, send, reminder } = event.queryStringParameters;
-
     const db = await connectToDatabase();
-    if (update) {
-      await addDailyUpdate(db, update).catch(err => callback(err));
+    if (event.queryStringParameters.update) {
+      await addDailyUpdate(db, event.queryStringParameters.update).catch(err => callback(err));
       const resp = {
         statusCode: 200,
-        body: `Thanks! Your update has been saved: <code>${update}</code>`,
+        body: `Thanks! Your update has been saved: <code>${event.queryStringParameters.update}</code>`,
       };
       return callback(null, resp);
     }
 
-    if (send === '1') {
+    if (event.queryStringParameters.send === '1') {
       await whatTelegramMessageToSend(db);
       const resp = {
         statusCode: 200,
@@ -141,7 +139,7 @@ const executeMongo = async (event, context, callback) => {
       return callback(null, resp);
     }
 
-    if (roll === '1') {
+    if (event.queryStringParameters.roll === '1') {
       await sendNewPerson(db);
       const resp = {
         statusCode: 200,
@@ -151,7 +149,7 @@ const executeMongo = async (event, context, callback) => {
     }
 
     // No reminders
-    if (reminder === '1') {
+    if (event.queryStringParameters.reminder === '1') {
       return;
       await sendReminder(db);
       const resp = {
