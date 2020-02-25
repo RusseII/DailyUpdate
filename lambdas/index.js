@@ -3,14 +3,27 @@ const fetch = require('node-fetch');
 
 const { MongoClient, ObjectID } = require('mongodb');
 
-const MONGODB_URI = process.env.RUSSELL_WORK_MONGODB_URI;
-
 let cachedDb = null;
-const timestamp = () => new Date().toString();
-const person = 'James';
-let lastMessage = `Uh oh, ${person} decided not to post an update today :(`;
+const MONGODB_URI = process.env.RUSSELL_WORK_MONGODB_URI;
 const wholeGroupChatId = '-1001341192052';
 const reminderChatId = '-1001341192052';
+const timestamp = () => new Date().toString();
+const persons = [
+  'Matt',
+  'Peter',
+  'Emerson',
+  'Kyle',
+  'Jack',
+  'James',
+  'Julie',
+  'Russell',
+  'Grace',
+  'Aaron',
+];
+
+function getRandomPerson() {
+  return persons[Math.floor(Math.random() * persons.length)];
+}
 
 async function connectToDatabase() {
   const uri = MONGODB_URI;
@@ -57,10 +70,11 @@ async function getLastDbEntry(db) {
       console.log('=> an error occurred: ', err);
       return { statusCode: 500, body: 'error adding to mongodb' };
     });
-  console.log(lastUpdate);
 
   if (lastUpdate && lastUpdate.length > 0) {
-    lastMessage = `${person}: ${lastUpdate[0].dailyUpdate}`;
+    lastMessage = lastUpdate[0].dailyUpdate;
+  } else {
+    lastMessage = `Uh oh, someone decided not to post an update today :(. A new person has been picked: ${getRandomPerson()})`;
   }
 
   return lastMessage;
@@ -69,7 +83,6 @@ async function getLastDbEntry(db) {
 const sendTelegramMsg = async (text, chatId) => {
   const headers = { 'Content-Type': 'application/json' };
   const msg = { text, chat_id: chatId };
-  console.log(text);
   const resp = await fetch(
     `https://api.telegram.org/bot${process.env.GATES_ONLINE_SERVER_BOT_KEY}/sendMessage`,
     { method: 'POST', body: JSON.stringify(msg), headers }
@@ -83,11 +96,12 @@ const whatTelegramMessageToSend = async db => {
   return sendTelegramMsg(msg, wholeGroupChatId);
 };
 
+// No reminders
 const sendReminder = async db => {
   const msg = await getLastDbEntry(db);
-  if (lastMessage === msg) {
+  if (msg.indexOf('Uh oh') !== -1) {
     return sendTelegramMsg(
-      `Friendly reminder, ${person}, you better post an update soon!`,
+      `Friendly reminder, the person better post an update soon!`,
       reminderChatId
     );
   }
@@ -98,49 +112,47 @@ const executeMongo = async (event, context, callback) => {
   // eslint-disable-next-line no-param-reassign
   context.callbackWaitsForEmptyEventLoop = false;
 
-  if (event.queryStringParameters && event.queryStringParameters.update) {
-    const db = await connectToDatabase();
-    const { update } = event.queryStringParameters;
-    await addDailyUpdate(db, update).catch(err => callback(err));
-    const resp = {
-      statusCode: 200,
-      body: `Thanks, ${person}! Your update has been saved. ${update}`,
-    };
-    callback(null, resp);
-  }
+  if (event.queryStringParameters) {
+    const { update, send, reminder } = event.queryStringParameters;
 
-  if (event.queryStringParameters && event.queryStringParameters.send === '1') {
     const db = await connectToDatabase();
-    const tgResponse = await whatTelegramMessageToSend(db);
-    console.log(tgResponse);
-    const resp = {
-      statusCode: 200,
-      body: JSON.stringify({ message: 'Message sent succesfully!' }),
-    };
-    callback(null, resp);
-  }
+    if (update) {
+      await addDailyUpdate(db, update).catch(err => callback(err));
+      const resp = {
+        statusCode: 200,
+        body: `Thanks! Your update has been saved: <code>${update}</code>`,
+      };
+      return callback(null, resp);
+    }
 
-  if (event.queryStringParameters && event.queryStringParameters.reminder === '1') {
-    const db = await connectToDatabase();
-    const tgResponse = await sendReminder(db);
-    console.log(tgResponse);
-    const resp = {
-      statusCode: 200,
-      body: JSON.stringify({ message: 'Reminder Successful!' }),
-    };
-    callback(null, resp);
+    if (send === '1') {
+      await whatTelegramMessageToSend(db);
+      const resp = {
+        statusCode: 200,
+        body: JSON.stringify({ message: 'Message sent succesfully!' }),
+      };
+      return callback(null, resp);
+    }
+
+    // No reminders
+    if (reminder === '1') {
+      return;
+      await sendReminder(db);
+      const resp = {
+        statusCode: 200,
+        body: JSON.stringify({ message: 'Reminder Successful!' }),
+      };
+      return callback(null, resp);
+    }
   }
 
   const resp = {
     statusCode: 200,
-    body: JSON.stringify({
-      message:
-        'Nothing happened. To update your message of the day please add your update after the equal sign. Example: api.russell.work/daily_update?update=Hello here is my update today!',
-    }),
+    body:
+      'Nothing happened. To update your message of the day please add your update after the equal sign. Example: api.russell.work/daily_update?update=Hello here is my update today!',
   };
-  callback(null, resp);
+
+  return callback(null, resp);
 };
 
 module.exports.handler = executeMongo;
-
-// executeMongo({body: {city: 'Hammondsville', state: "Ohio"}}, {}, {})
