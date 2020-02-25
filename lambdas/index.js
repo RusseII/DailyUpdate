@@ -74,7 +74,7 @@ async function getLastDbEntry(db) {
   if (lastUpdate && lastUpdate.length > 0) {
     lastMessage = lastUpdate[0].dailyUpdate;
   } else {
-    lastMessage = `Uh oh, someone decided not to post an update today :(. A new person has been picked: ${getRandomPerson()})`;
+    lastMessage = `Uh oh, someone decided not to post an update today :(`;
   }
 
   return lastMessage;
@@ -132,9 +132,10 @@ const executeMongo = async (event, context, callback) => {
 
     if (event.queryStringParameters.send === '1') {
       await whatTelegramMessageToSend(db);
+      await sendNewPerson(db);
       const resp = {
         statusCode: 200,
-        body: JSON.stringify({ message: 'Message sent succesfully!' }),
+        body: JSON.stringify({ message: 'Messages sent succesfully!' }),
       };
       return callback(null, resp);
     }
