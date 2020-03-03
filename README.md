@@ -6,15 +6,11 @@
 ### Guide!
 
 #### Submit an update:
-[https://api.russell.work/daily_update?update=](https://api.russell.work/daily_update?update=)
-Click that link, and type your update in the URL bar after the equal sign. 
+If its your turn you message the bot with your update.
 
 Everytime you put and update, it adds the update to the database. When the `send` endpoint is invoked, it grabs the most recent update sent in the last 24 hours.
 
-
 #### Send the update:
-You should never do this by hand. This is called daily by an AWS cloudwatch event.
-It sends the update to `The Whole Family` group chat.
-
+You should never do this by hand. This is called daily by an AWS cloudwatch event. It sends the update to `The Whole Family` group chat.
 
 If you ever get a `500` response, that is a bug. Please [message me](http://t.me/russeii) on telegram.
