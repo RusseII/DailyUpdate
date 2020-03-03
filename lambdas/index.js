@@ -46,7 +46,7 @@ async function addUpdateAndRollPerson(db, dailyUpdate) {
 
   const row = {
     dailyUpdate,
-    person: (todaysUpdate && todaysUpdate.person) || await getNextPersonFromYesterday(db),
+    person: (todaysUpdate && todaysUpdate.person) || (await getNextPersonFromYesterday(db)),
     nextPerson: (todaysUpdate && todaysUpdate.nextPerson) || getRandomPerson(),
     createdAt: timestamp(),
   };
@@ -150,7 +150,7 @@ const sendNewPerson = async db => {
     \n\n
     Use: https://api.russell.work/daily_update?update=hello`,
     rando.nextPerson.id
-  )
+  );
 };
 
 const executeMongo = async (event, context, callback) => {
@@ -200,9 +200,35 @@ const executeMongo = async (event, context, callback) => {
       return callback(null, resp);
     }
 
+    // Save update sent to bot
+    if (event.queryStringParameters.privateChat === '1') {
+      const chat = JSON.parse(event.body);
+      const nextPerson = await getNextPersonFromYesterday(db);
+
+      if (chat.message.from.id === nextPerson.id && chat.message.chat.type === 'private') {
+        latestTodaysPersonMessage = chat.message.text;
+        await addUpdateAndRollPerson(db, event.queryStringParameters.update).catch(callback);
+      }
+
+      const resp = {
+        statusCode: 200,
+        body: { message: 'Save Successful!' },
+      };
+      return callback(null, resp);
+    }
+
     if (event.queryStringParameters.test === '1') {
-      const thisPerson = await sendReminder(db);
-      return callback(null, thisPerson);
+      let resp = await fetch(`${TELEGRAM_URI}/getUpdates?allowed_updates=["message"]`).catch(err =>
+        console.log(err)
+      );
+      resp = await resp.json();
+      const todaysPersonMessages = resp.result.filter(
+        row => row.message.from.id === users[0].id && row.message.chat.type === 'private'
+      );
+      const latestTodaysPersonMessage =
+        todaysPersonMessages[todaysPersonMessages.length - 1].message.text;
+
+      return callback(null, latestTodaysPersonMessage);
     }
   }
 
@@ -218,14 +244,14 @@ const executeMongo = async (event, context, callback) => {
 module.exports.handler = executeMongo;
 
 if (process.env.NODE_ENV === 'development') {
-  executeMongo({ queryStringParameters: { update: `` } }, {}, (error, response) => {
+  executeMongo({ queryStringParameters: { test: '1' } }, {}, async (error, response) => {
     try {
-      response.json().then(j => {
-        console.log(JSON.stringify(j, null, 2));
-      });
+      const json = await response.json();
+      console.log(JSON.stringify(json, null, 2));
     } catch (e) {
       console.log(response);
     }
+    if (error) console.log('Error:', error);
     process.exit();
   });
 }
