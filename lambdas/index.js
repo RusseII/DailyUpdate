@@ -130,7 +130,7 @@ const sendReminder = async db => {
 
   if (!lastUpdate.dailyUpdate && nextPerson) {
     return sendTelegramMsg(
-      `Hey ${nextPerson.first_name}. Just a friendly reminder, please post an update soon!!\n\nUse: https://api.russell.work/daily_update?update=hello`,
+      `Hey ${nextPerson.first_name}. Just a friendly reminder, please post an update soon!!\n\nTo post an update, respond to me with your message.`,
       person.id
     );
   }
@@ -161,14 +161,9 @@ const executeMongo = async (event, context, callback) => {
     const db = await connectToDatabase();
 
     if (event.queryStringParameters.update) {
-      const row = await addUpdateAndRollPerson(db, event.queryStringParameters.update).catch(
-        callback
-      );
       const resp = {
         statusCode: 200,
-        body: `Thanks ${row.person.first_name}! Your update has been saved and a new person (${row.nextPerson.first_name}) has been chosen.
-        \n\n
-        ${row.dailyUpdate}`,
+        body: `Send it to the bot not to me!.`,
       };
       return callback(null, resp);
     }
@@ -202,13 +197,27 @@ const executeMongo = async (event, context, callback) => {
 
     // Save update sent to bot
     if (event.queryStringParameters.privateChat === '1') {
-      const chat = JSON.parse(event.body);
-      const nextPerson = await getNextPersonFromYesterday(db);
+      let chat = {};
+      try {
+        chat = JSON.parse(event.body);
+      } catch (e) {
+        chat = event.body;
+      }
 
-      if (chat.message.from.id === nextPerson.id && chat.message.chat.type === 'private') {
-        latestTodaysPersonMessage = chat.message.text;
-        await addUpdateAndRollPerson(db, event.queryStringParameters.update).catch(callback);
-        await sendTelegramMsg(`Your update has been saved, thanks ${chat.message.from.first_name}`, chat.message.from.id);
+      let person = {};
+      const lastUpdate = await getUpdateForToday(db);
+      if (!lastUpdate) {
+        person = await getNextPersonFromYesterday(db);
+      } else {
+        person = lastUpdate.person;
+      }
+
+      if (chat.message.from.id === person.id && chat.message.chat.type === 'private') {
+        await addUpdateAndRollPerson(db, chat.message.text);
+        await sendTelegramMsg(
+          `Your update has been saved, thanks ${chat.message.from.first_name}`,
+          chat.message.from.id
+        );
       }
 
       return callback(null, { statusCode: 200 });
@@ -231,8 +240,7 @@ const executeMongo = async (event, context, callback) => {
 
   const resp = {
     statusCode: 200,
-    body:
-      'Nothing happened. To update your message of the day please add your update after the equal sign. Example: api.russell.work/daily_update?update=Hello here is my update today!',
+    body: 'Nothing happened. To update your message of the day please send it to the bot!',
   };
 
   return callback(null, resp);
