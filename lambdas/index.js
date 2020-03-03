@@ -117,9 +117,9 @@ const sendMessageForToday = async db => {
 
   if (!lastUpdate) {
     const nextPerson = await getNextPersonFromYesterday(db);
-    lastMessage = `Uh oh, ${nextPerson.first_name} @${nextPerson.username} decided not to post an update today :(`;
+    lastMessage = `Uh oh, ${nextPerson.first_name} (@${nextPerson.username}) decided not to post an update today :(`;
   } else {
-    lastMessage = `This update is from our very own ${lastUpdate.person}:\n\n${lastUpdate.dailyUpdate}`;
+    lastMessage = `This update is from our very own ${lastUpdate.person.first_name} (@${lastUpdate.person.username}):\n\n${lastUpdate.dailyUpdate}`;
   }
   return sendTelegramMsg(msg, wholeGroupChatId);
 };
