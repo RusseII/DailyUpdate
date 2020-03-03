@@ -141,10 +141,16 @@ const sendReminder = async db => {
 // Should only be called on an empty update day
 const sendNewPerson = async db => {
   const rando = await addUpdateAndRollPerson(db, null);
-  return sendTelegramMsg(
+  await sendTelegramMsg(
     `A new person has been chosen: ${rando.nextPerson.first_name} @${rando.nextPerson.username}`,
     wholeGroupChatId
   );
+  return sendTelegramMsg(
+    `You've been selected! Please post an update tomorrow (NOT today).
+    \n\n
+    Use: https://api.russell.work/daily_update?update=hello`,
+    rando.nextPerson.id
+  )
 };
 
 const executeMongo = async (event, context, callback) => {
