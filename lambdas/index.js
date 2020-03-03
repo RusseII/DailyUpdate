@@ -114,12 +114,12 @@ const sendTelegramMsg = async (text, chatId) => {
 
 const sendMessageForToday = async db => {
   const lastUpdate = await getUpdateForToday(db);
-
+  let msg = '';
   if (!lastUpdate) {
     const nextPerson = await getNextPersonFromYesterday(db);
-    lastMessage = `Uh oh, ${nextPerson.first_name} (@${nextPerson.username}) decided not to post an update today :(`;
+    msg = `Uh oh, ${nextPerson.first_name} (@${nextPerson.username}) decided not to post an update today :(`;
   } else {
-    lastMessage = `This update is from our very own ${lastUpdate.person.first_name} (@${lastUpdate.person.username}):\n\n${lastUpdate.dailyUpdate}`;
+    msg = `This update is from our very own ${lastUpdate.person.first_name} (@${lastUpdate.person.username}):\n\n${lastUpdate.dailyUpdate}`;
   }
   return sendTelegramMsg(msg, wholeGroupChatId);
 };
