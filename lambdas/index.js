@@ -208,6 +208,7 @@ const executeMongo = async (event, context, callback) => {
       if (chat.message.from.id === nextPerson.id && chat.message.chat.type === 'private') {
         latestTodaysPersonMessage = chat.message.text;
         await addUpdateAndRollPerson(db, event.queryStringParameters.update).catch(callback);
+        await sendTelegramMsg(`Your update has been saved, thanks ${chat.message.from.first_name}`, chat.message.from.id);
       }
 
       return callback(null, { statusCode: 200 });
