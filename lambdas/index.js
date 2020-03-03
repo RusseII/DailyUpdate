@@ -41,10 +41,13 @@ async function connectToDatabase() {
 async function addUpdateAndRollPerson(db, dailyUpdate) {
   console.log('=> query database');
 
+  // To get current person, so as not to reroll 10x if they call this API 10x
+  const todaysUpdate = await getUpdateForToday(db);
+
   const row = {
     dailyUpdate,
-    person: await getNextPersonFromYesterday(db),
-    nextPerson: getRandomPerson(),
+    person: (todaysUpdate && todaysUpdate.person) || await getNextPersonFromYesterday(db),
+    nextPerson: (todaysUpdate && todaysUpdate.nextPerson) || getRandomPerson(),
     createdAt: timestamp(),
   };
 
@@ -209,7 +212,7 @@ const executeMongo = async (event, context, callback) => {
 module.exports.handler = executeMongo;
 
 if (process.env.NODE_ENV === 'development') {
-  executeMongo({ queryStringParameters: { test: '1' } }, {}, (error, response) => {
+  executeMongo({ queryStringParameters: { update: `` } }, {}, (error, response) => {
     try {
       response.json().then(j => {
         console.log(JSON.stringify(j, null, 2));
