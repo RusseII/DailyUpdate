@@ -210,11 +210,7 @@ const executeMongo = async (event, context, callback) => {
         await addUpdateAndRollPerson(db, event.queryStringParameters.update).catch(callback);
       }
 
-      const resp = {
-        statusCode: 200,
-        body: { message: 'Save Successful!' },
-      };
-      return callback(null, resp);
+      return callback(null, { statusCode: 200 });
     }
 
     if (event.queryStringParameters.test === '1') {
