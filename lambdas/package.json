@@ -4,10 +4,11 @@
         "deploy": "rm -rf lambdaFunc.zip && yarn --prod && zip -r lambdaFunc.zip . && aws lambda update-function-code --function-name EmersonDailyUpdate --region us-east-1 --zip-file fileb://./lambdaFunc.zip"
     },
     "dependencies": {
-        "mongodb": "^3.5.3",
+        "mongodb": "^3.5.4",
         "node-fetch": "^2.6.0"
     },
     "devDependencies": {
+        "dotenv": "^8.2.0",
         "eslint": "^6.8.0",
         "eslint-config-airbnb": "^18.0.1",
         "eslint-config-prettier": "^6.10.0",

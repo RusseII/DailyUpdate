@@ -1,16 +1,20 @@
 /* eslint-disable no-console */
 const fetch = require('node-fetch');
+const users = require('./users').users;
+require('dotenv').config();
 
 const { MongoClient, ObjectID } = require('mongodb');
 
-const MONGODB_URI = process.env.RUSSELL_WORK_MONGODB_URI;
-
 let cachedDb = null;
-const timestamp = () => new Date().toString();
-const person = 'James';
-let lastMessage = `Uh oh, ${person} decided not to post an update today :(`;
+const MONGODB_URI = process.env.RUSSELL_WORK_MONGODB_URI;
+const TELEGRAM_URI = `https://api.telegram.org/bot${process.env.GATES_ONLINE_SERVER_BOT_KEY}`;
 const wholeGroupChatId = '-1001341192052';
 const reminderChatId = '-1001341192052';
+const timestamp = () => new Date().toString();
+
+function getRandomPerson() {
+  return users[Math.floor(Math.random() * users.length)];
+}
 
 async function connectToDatabase() {
   const uri = MONGODB_URI;
@@ -21,126 +25,198 @@ async function connectToDatabase() {
     return Promise.resolve(cachedDb);
   }
 
-  const connection = await MongoClient.connect(uri);
-  console.log('=> creating a new connection');
-  cachedDb = connection.db('russell_work');
-  return Promise.resolve(cachedDb);
+  if (uri) {
+    const connection = await MongoClient.connect(uri, {
+      useUnifiedTopology: true,
+      useNewUrlParser: true,
+    });
+    console.log('=> creating a new connection');
+    cachedDb = connection.db('russell_work');
+    return Promise.resolve(cachedDb);
+  } else {
+    throw Error('Create a .env with RUSSELL_WORK_MONGODB_URI');
+  }
 }
 
-async function addDailyUpdate(db, dailyUpdate) {
+async function addUpdateAndRollPerson(db, dailyUpdate) {
   console.log('=> query database');
+
+  const row = {
+    dailyUpdate,
+    person: await getNextPersonFromYesterday(db),
+    nextPerson: getRandomPerson(),
+    createdAt: timestamp(),
+  };
 
   await db
     .collection('daily_update')
-    .insertOne({ dailyUpdate, createdAt: timestamp() })
+    .insertOne(row)
     .catch(err => {
       console.log('=> an error occurred: ', err);
       return { statusCode: 500, body: 'error adding to mongodb' };
     });
 
-  return { dailyUpdate };
+  return row;
 }
 
-async function getLastDbEntry(db) {
+async function getUpdateForToday(db) {
   console.log('=> query database');
 
   const lastUpdate = await db
     .collection('daily_update')
-    .find({
-      _id: {
-        $gt: ObjectID.createFromTime(Date.now() / 1000 - 24 * 60 * 60),
+    .findOne(
+      {
+        _id: {
+          $gt: ObjectID.createFromTime(Date.now() / 1000 - 24 * 60 * 60),
+        },
       },
-    })
-    .sort({ _id: -1 })
-    .toArray()
+      { sort: { $natural: -1 } }
+    )
     .catch(err => {
       console.log('=> an error occurred: ', err);
       return { statusCode: 500, body: 'error adding to mongodb' };
     });
-  console.log(lastUpdate);
 
-  if (lastUpdate && lastUpdate.length > 0) {
-    lastMessage = `${person}: ${lastUpdate[0].dailyUpdate}`;
-  }
+  return lastUpdate;
+}
 
-  return lastMessage;
+// Get the person for the scheduled update
+async function getNextPersonFromYesterday(db) {
+  console.log('=> query database');
+
+  const lastUpdate = await db
+    .collection('daily_update')
+    .findOne({ nextPerson: { $exists: true } }, { sort: { $natural: -1 } })
+    .catch(err => {
+      console.log('=> an error occurred: ', err);
+      return { statusCode: 500, body: 'error querying mongodb' };
+    });
+
+  nextPerson = (lastUpdate && lastUpdate.nextPerson) || null;
+
+  return nextPerson;
 }
 
 const sendTelegramMsg = async (text, chatId) => {
   const headers = { 'Content-Type': 'application/json' };
   const msg = { text, chat_id: chatId };
-  console.log(text);
-  const resp = await fetch(
-    `https://api.telegram.org/bot${process.env.GATES_ONLINE_SERVER_BOT_KEY}/sendMessage`,
-    { method: 'POST', body: JSON.stringify(msg), headers }
-  ).catch(err => console.log(err));
+  const resp = await fetch(`${TELEGRAM_URI}/sendMessage`, {
+    method: 'POST',
+    body: JSON.stringify(msg),
+    headers,
+  }).catch(err => console.log(err));
   if (resp.status !== 200) console.log(resp);
   return resp;
 };
 
-const whatTelegramMessageToSend = async db => {
-  const msg = await getLastDbEntry(db);
+const sendMessageForToday = async db => {
+  const lastUpdate = await getUpdateForToday(db);
+
+  if (!lastUpdate) {
+    const nextPerson = await getNextPersonFromYesterday(db);
+    lastMessage = `Uh oh, ${nextPerson.first_name} @${nextPerson.username} decided not to post an update today :(`;
+  } else {
+    lastMessage = `This update is from our very own ${lastUpdate.person}:\n\n${lastUpdate.dailyUpdate}`;
+  }
   return sendTelegramMsg(msg, wholeGroupChatId);
 };
 
 const sendReminder = async db => {
-  const msg = await getLastDbEntry(db);
-  if (lastMessage === msg) {
+  const lastUpdate = await getUpdateForToday(db);
+  const nextPerson = await getNextPersonFromYesterday(db);
+
+  if (!lastUpdate.dailyUpdate && nextPerson) {
     return sendTelegramMsg(
-      `Friendly reminder, ${person}, you better post an update soon!`,
-      reminderChatId
+      `Hey ${nextPerson.first_name}. Just a friendly reminder, please post an update soon!!\n\nUse: https://api.russell.work/daily_update?update=hello`,
+      person.id
     );
   }
+
   return null;
+};
+
+// Should only be called on an empty update day
+const sendNewPerson = async db => {
+  const rando = await addUpdateAndRollPerson(db, null);
+  return sendTelegramMsg(
+    `A new person has been chosen: ${rando.nextPerson.first_name} @${rando.nextPerson.username}`,
+    wholeGroupChatId
+  );
 };
 
 const executeMongo = async (event, context, callback) => {
   // eslint-disable-next-line no-param-reassign
   context.callbackWaitsForEmptyEventLoop = false;
 
-  if (event.queryStringParameters && event.queryStringParameters.update) {
+  if (event.queryStringParameters) {
     const db = await connectToDatabase();
-    const { update } = event.queryStringParameters;
-    await addDailyUpdate(db, update).catch(err => callback(err));
-    const resp = {
-      statusCode: 200,
-      body: `Thanks, ${person}! Your update has been saved. ${update}`,
-    };
-    callback(null, resp);
-  }
 
-  if (event.queryStringParameters && event.queryStringParameters.send === '1') {
-    const db = await connectToDatabase();
-    const tgResponse = await whatTelegramMessageToSend(db);
-    console.log(tgResponse);
-    const resp = {
-      statusCode: 200,
-      body: JSON.stringify({ message: 'Message sent succesfully!' }),
-    };
-    callback(null, resp);
-  }
+    if (event.queryStringParameters.update) {
+      const row = await addUpdateAndRollPerson(db, event.queryStringParameters.update).catch(
+        callback
+      );
+      const resp = {
+        statusCode: 200,
+        body: `Thanks ${row.person.first_name}! Your update has been saved and a new person (${row.nextPerson.first_name}) has been chosen.
+        \n\n
+        ${row.dailyUpdate}`,
+      };
+      return callback(null, resp);
+    }
 
-  if (event.queryStringParameters && event.queryStringParameters.reminder === '1') {
-    const db = await connectToDatabase();
-    const tgResponse = await sendReminder(db);
-    console.log(tgResponse);
-    const resp = {
-      statusCode: 200,
-      body: JSON.stringify({ message: 'Reminder Successful!' }),
-    };
-    callback(null, resp);
+    if (event.queryStringParameters.send === '1') {
+      await sendMessageForToday(db);
+      const resp = {
+        statusCode: 200,
+        body: { message: 'Messages sent succesfully!' },
+      };
+      return callback(null, resp);
+    }
+
+    if (event.queryStringParameters.roll === '1') {
+      await sendNewPerson(db);
+      const resp = {
+        statusCode: 200,
+        body: { message: 'Roll sent!' },
+      };
+      return callback(null, resp);
+    }
+
+    if (event.queryStringParameters.reminder === '1') {
+      await sendReminder(db);
+      const resp = {
+        statusCode: 200,
+        body: { message: 'Reminder Successful!' },
+      };
+      return callback(null, resp);
+    }
+
+    if (event.queryStringParameters.test === '1') {
+      const thisPerson = await sendReminder(db);
+      return callback(null, thisPerson);
+    }
   }
 
   const resp = {
     statusCode: 200,
-    body: JSON.stringify({
-      message:
-        'Nothing happened. To update your message of the day please add your update after the equal sign. Example: api.russell.work/daily_update?update=Hello here is my update today!',
-    }),
+    body:
+      'Nothing happened. To update your message of the day please add your update after the equal sign. Example: api.russell.work/daily_update?update=Hello here is my update today!',
   };
-  callback(null, resp);
+
+  return callback(null, resp);
 };
 
 module.exports.handler = executeMongo;
 
-// executeMongo({body: {city: 'Hammondsville', state: "Ohio"}}, {}, {})
+if (process.env.NODE_ENV === 'development') {
+  executeMongo({ queryStringParameters: { test: '1' } }, {}, (error, response) => {
+    try {
+      response.json().then(j => {
+        console.log(JSON.stringify(j, null, 2));
+      });
+    } catch (e) {
+      console.log(response);
+    }
+    process.exit();
+  });
+}
