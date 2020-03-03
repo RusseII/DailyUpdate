@@ -152,7 +152,7 @@ const sendNewPerson = async db => {
   return sendTelegramMsg(
     `You've been selected! Please post an update tomorrow (NOT today).
     \n\n
-    Use: https://api.russell.work/daily_update?update=hello`,
+    To post an update, just send the full message to me when you're ready.`,
     lastUpdate.nextPerson.id
   );
 };
