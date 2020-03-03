@@ -140,16 +140,20 @@ const sendReminder = async db => {
 
 // Should only be called on an empty update day
 const sendNewPerson = async db => {
-  const rando = await addUpdateAndRollPerson(db, null);
+  let lastUpdate = await getUpdateForToday(db);
+  if (!lastUpdate) {
+    lastUpdate = await addUpdateAndRollPerson(db, null);
+  }
+
   await sendTelegramMsg(
-    `A new person has been chosen: ${rando.nextPerson.first_name} @${rando.nextPerson.username}`,
+    `A new person has been chosen: ${lastUpdate.nextPerson.first_name} @${lastUpdate.nextPerson.username}`,
     wholeGroupChatId
   );
   return sendTelegramMsg(
     `You've been selected! Please post an update tomorrow (NOT today).
     \n\n
     Use: https://api.russell.work/daily_update?update=hello`,
-    rando.nextPerson.id
+    lastUpdate.nextPerson.id
   );
 };
 
@@ -170,6 +174,7 @@ const executeMongo = async (event, context, callback) => {
 
     if (event.queryStringParameters.send === '1') {
       await sendMessageForToday(db);
+      await sendNewPerson(db);
       const resp = {
         statusCode: 200,
         body: { message: 'Messages sent succesfully!' },
