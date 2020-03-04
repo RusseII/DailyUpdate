@@ -216,17 +216,22 @@ const executeMongo = async (event, context, callback) => {
       }
 
       if (chat.message.chat.type === 'private') {
-        console.log(
-          'Got message from',
-          chat.message.from.first_name,
-          chat.message.from.id,
-          chat.message.text
-        );
-        console.log('looing for', person.id);
         if (chat.message.from.id === person.id) {
           await addUpdateAndRollPerson(db, chat.message.text);
           await sendTelegramMsg(
             `Your update has been saved, thanks ${chat.message.from.first_name}`,
+            chat.message.from.id
+          );
+        } else {
+          console.log(
+            'Got message from',
+            chat.message.from.first_name,
+            chat.message.from.id,
+            chat.message.text
+          );
+          console.log('Looking for', person.id);
+          await sendTelegramMsg(
+            `Its not your turn to update, its ${person.first_name}'s turn with tg id ${person.id}. Your tg id is ${chat.message.from.id}. If its actually your turn tell an admin so he can fix ur id`,
             chat.message.from.id
           );
         }
