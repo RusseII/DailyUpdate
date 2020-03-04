@@ -95,9 +95,7 @@ async function getNextPersonFromYesterday(db) {
       return { statusCode: 500, body: 'error querying mongodb' };
     });
 
-  nextPerson = (lastUpdate && lastUpdate.nextPerson) || null;
-
-  return nextPerson;
+  return (lastUpdate && lastUpdate.nextPerson) || null;
 }
 
 const sendTelegramMsg = async (text, chatId) => {
@@ -131,7 +129,7 @@ const sendReminder = async db => {
   if (!lastUpdate.dailyUpdate && nextPerson) {
     return sendTelegramMsg(
       `Hey ${nextPerson.first_name}. Just a friendly reminder, please post an update soon!!\n\nTo post an update, respond to me with your message.`,
-      person.id
+      nextPerson.id
     );
   }
 
