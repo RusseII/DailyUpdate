@@ -223,13 +223,6 @@ const executeMongo = async (event, context, callback) => {
             chat.message.from.id
           );
         } else {
-          console.log(
-            'Got message from',
-            chat.message.from.first_name,
-            chat.message.from.id,
-            chat.message.text
-          );
-          console.log('Looking for', todaysPerson.id);
           await sendTelegramMsg(
             `Its not your turn to update, its ${todaysPerson.first_name}'s turn with tg id ${todaysPerson.id}. Your tg id is ${chat.message.from.id}. If its actually your turn tell an admin so he can fix ur id`,
             chat.message.from.id
