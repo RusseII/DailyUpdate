@@ -212,7 +212,7 @@ const executeMongo = async (event, context, callback) => {
       if (!lastUpdate) {
         person = await getNextPersonFromYesterday(db);
       } else {
-        person = lastUpdate.person;
+        person = lastUpdate.nextPerson;
       }
 
       if (chat.message.chat.type === 'private') {
