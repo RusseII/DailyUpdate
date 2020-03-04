@@ -215,12 +215,21 @@ const executeMongo = async (event, context, callback) => {
         person = lastUpdate.person;
       }
 
-      if (chat.message.from.id === person.id && chat.message.chat.type === 'private') {
-        await addUpdateAndRollPerson(db, chat.message.text);
-        await sendTelegramMsg(
-          `Your update has been saved, thanks ${chat.message.from.first_name}`,
-          chat.message.from.id
+      if (chat.message.chat.type === 'private') {
+        console.log(
+          'Got message from',
+          chat.message.from.first_name,
+          chat.message.from.id,
+          chat.message.text
         );
+        console.log('looing for', person.id);
+        if (chat.message.from.id === person.id) {
+          await addUpdateAndRollPerson(db, chat.message.text);
+          await sendTelegramMsg(
+            `Your update has been saved, thanks ${chat.message.from.first_name}`,
+            chat.message.from.id
+          );
+        }
       }
 
       return callback(null, { statusCode: 200 });
