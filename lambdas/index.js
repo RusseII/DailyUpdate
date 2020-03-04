@@ -207,16 +207,16 @@ const executeMongo = async (event, context, callback) => {
         chat = event.body;
       }
 
-      let person = {};
+      let todaysPerson = {};
       const lastUpdate = await getUpdateForToday(db);
       if (!lastUpdate) {
-        person = await getNextPersonFromYesterday(db);
+        todaysPerson = await getNextPersonFromYesterday(db);
       } else {
-        person = lastUpdate.nextPerson;
+        todaysPerson = lastUpdate.person;
       }
 
       if (chat.message.chat.type === 'private') {
-        if (chat.message.from.id === person.id) {
+        if (chat.message.from.id === todaysPerson.id) {
           await addUpdateAndRollPerson(db, chat.message.text);
           await sendTelegramMsg(
             `Your update has been saved, thanks ${chat.message.from.first_name}`,
@@ -229,9 +229,9 @@ const executeMongo = async (event, context, callback) => {
             chat.message.from.id,
             chat.message.text
           );
-          console.log('Looking for', person.id);
+          console.log('Looking for', todaysPerson.id);
           await sendTelegramMsg(
-            `Its not your turn to update, its ${person.first_name}'s turn with tg id ${person.id}. Your tg id is ${chat.message.from.id}. If its actually your turn tell an admin so he can fix ur id`,
+            `Its not your turn to update, its ${todaysPerson.first_name}'s turn with tg id ${todaysPerson.id}. Your tg id is ${chat.message.from.id}. If its actually your turn tell an admin so he can fix ur id`,
             chat.message.from.id
           );
         }
