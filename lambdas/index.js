@@ -64,13 +64,15 @@ async function addUpdateAndRollPerson(db, dailyUpdate) {
 
 async function getUpdateForToday(db) {
   console.log('=> query database');
+  const start = new Date();
+  start.setHours(0,0,0,0);
 
   const lastUpdate = await db
     .collection('daily_update')
     .findOne(
       {
         _id: {
-          $gt: ObjectID.createFromTime(Date.now() / 1000 - 24 * 60 * 60),
+          $gt: ObjectID.createFromTime(start.getTime()),
         },
       },
       { sort: { $natural: -1 } }
