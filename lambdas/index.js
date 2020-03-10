@@ -1,20 +1,39 @@
 /* eslint-disable no-console */
 const fetch = require('node-fetch');
-const users = require('./users').users;
-require('dotenv').config();
-
 const { MongoClient, ObjectID } = require('mongodb');
+const { users } = require('./users');
+require('dotenv').config();
 
 let cachedDb = null;
 const MONGODB_URI = process.env.RUSSELL_WORK_MONGODB_URI;
 const TELEGRAM_URI = `https://api.telegram.org/bot${process.env.GATES_ONLINE_SERVER_BOT_KEY}`;
 const wholeGroupChatId = '-1001341192052';
-// const reminderChatId = '-1001341192052';
+
 const timestamp = () => new Date().toString();
 
+const errorHandler = err => {
+  console.log('=> an error occurred: ', err);
+  return { statusCode: 500, body: 'EEK! ERROR' };
+};
 function getRandomPerson() {
   return users[Math.floor(Math.random() * users.length)];
 }
+
+const storeUpdatePerson = async (db, person) => {
+  await db
+    .collection('daily_update_person')
+    .insertOne(person)
+    .catch(errorHandler);
+};
+
+const getUpdatePerson = async db => {
+  const person = await db
+    .collection('daily_update_person')
+    .findOne({}, { sort: { $natural: -1 } })
+    .catch(errorHandler);
+
+  return person;
+};
 
 async function connectToDatabase() {
   const uri = MONGODB_URI;
@@ -33,71 +52,46 @@ async function connectToDatabase() {
     console.log('=> creating a new connection');
     cachedDb = connection.db('russell_work');
     return Promise.resolve(cachedDb);
-  } else {
-    throw Error('Create a .env with RUSSELL_WORK_MONGODB_URI');
   }
+  throw Error('Create a .env with RUSSELL_WORK_MONGODB_URI');
 }
 
-async function addUpdateAndRollPerson(db, dailyUpdate) {
+async function addUpdate(db, dailyUpdate) {
   console.log('=> query database');
 
-  // To get current person, so as not to reroll 10x if they call this API 10x
-  const todaysUpdate = await getUpdateForToday(db);
+  const todaysPerson = await getUpdatePerson(db);
 
   const row = {
     dailyUpdate,
-    person: (todaysUpdate && todaysUpdate.person) || (await getNextPersonFromYesterday(db)),
-    nextPerson: (todaysUpdate && todaysUpdate.nextPerson) || getRandomPerson(),
+    person: todaysPerson,
     createdAt: timestamp(),
   };
 
   await db
     .collection('daily_update')
     .insertOne(row)
-    .catch(err => {
-      console.log('=> an error occurred: ', err);
-      return { statusCode: 500, body: 'error adding to mongodb' };
-    });
+    .catch(errorHandler);
 
   return row;
 }
 
-async function getUpdateForToday(db) {
+async function getTodaysDailyUpdate(db) {
   console.log('=> query database');
-  const start = new Date();
-  start.setHours(0,0,0,0);
+  const oneDayAgo = Date.now() / 1000 - 24 * 60 * 60;
 
   const lastUpdate = await db
     .collection('daily_update')
     .findOne(
       {
         _id: {
-          $gt: ObjectID.createFromTime(start.getTime()),
+          $gt: ObjectID.createFromTime(oneDayAgo),
         },
       },
       { sort: { $natural: -1 } }
     )
-    .catch(err => {
-      console.log('=> an error occurred: ', err);
-      return { statusCode: 500, body: 'error adding to mongodb' };
-    });
+    .catch(errorHandler);
 
   return lastUpdate;
-}
-
-// Get the person for the scheduled update
-async function getNextPersonFromYesterday(db) {
-  console.log('=> query database');
-
-  const lastUpdate = await db
-    .collection('daily_update')
-    .findOne({ nextPerson: { $exists: true } }, { sort: { $natural: -1 } })
-    .catch(err => {
-      console.log('=> an error occurred: ', err);
-      return { statusCode: 500, body: 'error querying mongodb' };
-    });
-
-  return (lastUpdate && lastUpdate.nextPerson) || null;
 }
 
 const sendTelegramMsg = async (text, chatId) => {
@@ -112,48 +106,46 @@ const sendTelegramMsg = async (text, chatId) => {
   return resp;
 };
 
-const sendMessageForToday = async db => {
-  const lastUpdate = await getUpdateForToday(db);
+const sendDailyUpdate = async db => {
+  const lastUpdate = await getTodaysDailyUpdate(db);
+  console.log(lastUpdate)
+  const currentPerson = await getUpdatePerson(db);
   let msg = '';
   if (!lastUpdate) {
-    const nextPerson = await getNextPersonFromYesterday(db);
-    msg = `Uh oh, ${nextPerson.first_name} (@${nextPerson.username}) decided not to post an update today :(`;
+    msg = `Uh oh, ${currentPerson.first_name} (@${currentPerson.username}) decided not to post an update today :(`;
   } else {
-    msg = `This update is from our very own ${lastUpdate.person.first_name} (@${lastUpdate.person.username}):\n\n${lastUpdate.dailyUpdate}`;
+    msg = `This update is from our very own ${currentPerson.first_name} (@${currentPerson.username}):\n\n${lastUpdate.dailyUpdate}`;
   }
   return sendTelegramMsg(msg, wholeGroupChatId);
 };
 
 const sendReminder = async db => {
-  const lastUpdate = await getUpdateForToday(db);
-  const nextPerson = await getNextPersonFromYesterday(db);
+  const lastUpdate = await getTodaysDailyUpdate(db);
+  const currentPerson = await getUpdatePerson(db);
 
-  if (!lastUpdate.dailyUpdate && nextPerson) {
+  if (!lastUpdate) {
     return sendTelegramMsg(
-      `Hey ${nextPerson.first_name}. Just a friendly reminder, please post an update soon!!\n\nTo post an update, respond to me with your message.`,
-      nextPerson.id
+      `Hey ${currentPerson.first_name}. Just a friendly reminder, please post an update soon!!\n\nTo post an update, respond to me with your message.`,
+      currentPerson.id
     );
   }
 
   return null;
 };
 
-// Should only be called on an empty update day
-const sendNewPerson = async db => {
-  let lastUpdate = await getUpdateForToday(db);
-  if (!lastUpdate) {
-    lastUpdate = await addUpdateAndRollPerson(db, null);
-  }
+const selectNewPerson = async db => {
+  const newPerson = getRandomPerson();
+  await storeUpdatePerson(db, { ...newPerson, createdAt: timestamp() });
 
   await sendTelegramMsg(
-    `A new person has been chosen: ${lastUpdate.nextPerson.first_name} @${lastUpdate.nextPerson.username}`,
+    `A new person has been chosen: ${newPerson.first_name} @${newPerson.username}`,
     wholeGroupChatId
   );
   return sendTelegramMsg(
     `You've been selected! Please post an update tomorrow (NOT today).
     \n\n
     To post an update, just send the full message to me when you're ready.`,
-    lastUpdate.nextPerson.id
+    newPerson.id
   );
 };
 
@@ -173,8 +165,8 @@ const executeMongo = async (event, context, callback) => {
     }
 
     if (event.queryStringParameters.send === '1') {
-      await sendMessageForToday(db);
-      await sendNewPerson(db);
+      await sendDailyUpdate(db);
+      await selectNewPerson(db);
       const resp = {
         statusCode: 200,
         body: { message: 'Messages sent succesfully!' },
@@ -182,25 +174,7 @@ const executeMongo = async (event, context, callback) => {
       return callback(null, resp);
     }
 
-    if (event.queryStringParameters.roll === '1') {
-      await sendNewPerson(db);
-      const resp = {
-        statusCode: 200,
-        body: { message: 'Roll sent!' },
-      };
-      return callback(null, resp);
-    }
-
-    if (event.queryStringParameters.reminder === '1') {
-      await sendReminder(db);
-      const resp = {
-        statusCode: 200,
-        body: { message: 'Reminder Successful!' },
-      };
-      return callback(null, resp);
-    }
-
-    // Save update sent to bot
+    // bad paramater name - called on TG message callback
     if (event.queryStringParameters.privateChat === '1') {
       let chat = {};
       try {
@@ -209,17 +183,10 @@ const executeMongo = async (event, context, callback) => {
         chat = event.body;
       }
 
-      let todaysPerson = {};
-      const lastUpdate = await getUpdateForToday(db);
-      if (!lastUpdate) {
-        todaysPerson = await getNextPersonFromYesterday(db);
-      } else {
-        todaysPerson = lastUpdate.person;
-      }
-
       if (chat.message.chat.type === 'private') {
+        const todaysPerson = await getUpdatePerson(db);
         if (chat.message.from.id === todaysPerson.id) {
-          await addUpdateAndRollPerson(db, chat.message.text);
+          await addUpdate(db, chat.message.text);
           await sendTelegramMsg(
             `Your update has been saved, thanks ${chat.message.from.first_name}`,
             chat.message.from.id
@@ -230,31 +197,23 @@ const executeMongo = async (event, context, callback) => {
             chat.message.from.id
           );
         }
-      }
-      else {
-        if (chat.message.text.toLowerCase().includes('@everyone')) {
+      } else if (chat.message.text && chat.message.text.toLowerCase().includes('@everyone')) {
         await sendTelegramMsg(
           '@RusseII @geczy @gatesyq @memerson @ti0py @cr0wmium @sc4s2cg @gdog5 @ju1ie @gatesyp',
           wholeGroupChatId
         );
-        }
       }
 
       return callback(null, { statusCode: 200 });
     }
 
-    if (event.queryStringParameters.test === '1') {
-      let resp = await fetch(`${TELEGRAM_URI}/getUpdates?allowed_updates=["message"]`).catch(err =>
-        console.log(err)
-      );
-      resp = await resp.json();
-      const todaysPersonMessages = resp.result.filter(
-        row => row.message.from.id === users[0].id && row.message.chat.type === 'private'
-      );
-      const latestTodaysPersonMessage =
-        todaysPersonMessages[todaysPersonMessages.length - 1].message.text;
-
-      return callback(null, latestTodaysPersonMessage);
+    if (event.queryStringParameters.reminder === '1') {
+      await sendReminder(db);
+      const resp = {
+        statusCode: 200,
+        body: { message: 'Reminder Successful!' },
+      };
+      return callback(null, resp);
     }
   }
 
