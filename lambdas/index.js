@@ -203,6 +203,12 @@ const executeMongo = async (event, context, callback) => {
           wholeGroupChatId
         );
       }
+      else if ((Math.random() * 100) < 0.5) {
+        await sendTelegramMsg(
+          `MEOW XP MEOW! Congrats ${chat.message.from.username} (${chat.message.from.username}) on the lucky xp. \n Make sure to SPAM until you get the lucky xp!`,
+          wholeGroupChatId
+        );
+      }
 
       return callback(null, { statusCode: 200 });
     }
