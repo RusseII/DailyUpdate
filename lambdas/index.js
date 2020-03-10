@@ -9,7 +9,7 @@ let cachedDb = null;
 const MONGODB_URI = process.env.RUSSELL_WORK_MONGODB_URI;
 const TELEGRAM_URI = `https://api.telegram.org/bot${process.env.GATES_ONLINE_SERVER_BOT_KEY}`;
 const wholeGroupChatId = '-1001341192052';
-const reminderChatId = '-1001341192052';
+// const reminderChatId = '-1001341192052';
 const timestamp = () => new Date().toString();
 
 function getRandomPerson() {
@@ -229,6 +229,14 @@ const executeMongo = async (event, context, callback) => {
             `Its not your turn to update, its ${todaysPerson.first_name}'s turn with tg id ${todaysPerson.id}. Your tg id is ${chat.message.from.id}. If its actually your turn tell an admin so he can fix ur id`,
             chat.message.from.id
           );
+        }
+      }
+      else {
+        if (chat.message.text.toLowerCase().includes('@everyone')) {
+        await sendTelegramMsg(
+          '@RusseII @geczy @gatesyq @memerson @ti0py @cr0wmium @sc4s2cg @gdog5 @ju1ie @gatesyp',
+          wholeGroupChatId
+        );
         }
       }
 
