@@ -77,14 +77,15 @@ async function addUpdate(db, dailyUpdate) {
 
 async function getTodaysDailyUpdate(db) {
   console.log('=> query database');
-  const oneDayAgo = Date.now() / 1000 - 24 * 60 * 60;
+  let sendTime = new Date();
+  sendTime.setUTCHours(0,0,0)
 
   const lastUpdate = await db
     .collection('daily_update')
     .findOne(
       {
         _id: {
-          $gt: ObjectID.createFromTime(oneDayAgo),
+          $gt: ObjectID.createFromTime(sendTime),
         },
       },
       { sort: { $natural: -1 } }
@@ -217,7 +218,7 @@ const executeMongo = async (event, context, callback) => {
       await sendReminder(db);
       const resp = {
         statusCode: 200,
-        body: { message: 'Reminder Successful!' },
+        body: JSON.stringify({ message: 'Reminder Successful!' }),
       };
       return callback(null, resp);
     }
