@@ -78,7 +78,10 @@ async function addUpdate(db, dailyUpdate) {
 async function getTodaysDailyUpdate(db) {
   console.log('=> query database');
   let sendTime = new Date();
-  sendTime.setUTCHours(0,0,0)
+  sendTime.setUTCHours(0,0,0);
+  // Javascript uses the number of milliseconds since epoch. Unix timestamp is seconds since epoch.
+  // ObjectId.createFromTime needs the timestamp in seconds (Unix timestamp).
+  sendTime = sendTime / 1000;
 
   const lastUpdate = await db
     .collection('daily_update')
@@ -91,7 +94,7 @@ async function getTodaysDailyUpdate(db) {
       { sort: { $natural: -1 } }
     )
     .catch(errorHandler);
-
+console.log("LAST UPDATE", lastUpdate)
   return lastUpdate;
 }
 
