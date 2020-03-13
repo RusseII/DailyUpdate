@@ -2,6 +2,7 @@
 const fetch = require('node-fetch');
 const { MongoClient, ObjectID } = require('mongodb');
 const { users } = require('./users');
+const { ranks } = require('./ranks');
 require('dotenv').config();
 
 let cachedDb = null;
@@ -19,12 +20,44 @@ function getRandomPerson() {
   return users[Math.floor(Math.random() * users.length)];
 }
 
+const storeLuckyMessage = async (db, chat) => {
+  return await db
+    .collection('lucky_message')
+    .insertOne(chat)
+    .catch(errorHandler);
+};
+
+const getLuckyMessageCount = async (db, chat) => {
+  const count = await db
+    .collection('lucky_message')
+    .count({ "message.from.id": chat.message.from.id })
+    .catch(errorHandler);
+  return count;
+};
+
+const handleLuckMessage = async (db, chat) => {
+
+  await storeLuckyMessage(db, chat)
+  level = await getLuckyMessageCount(db, chat)
+  const title = ranks[level -1]
+
+  await sendTelegramMsg(
+    `MEOW XP MEOW! Congrats @${chat.message.from.username} on the lucky xp. 
+
+You have been promoted to rank ${level} with a title of ${title}
+
+Make sure to SPAM until you get a LUCKY PROMOTION!`,
+
+    wholeGroupChatId
+  );
+}
 const storeUpdatePerson = async (db, person) => {
   await db
     .collection('daily_update_person')
     .insertOne(person)
     .catch(errorHandler);
 };
+
 
 const getUpdatePerson = async db => {
   const person = await db
@@ -78,7 +111,7 @@ async function addUpdate(db, dailyUpdate) {
 async function getTodaysDailyUpdate(db) {
   console.log('=> query database');
   let sendTime = new Date();
-  sendTime.setUTCHours(0,0,0);
+  sendTime.setUTCHours(0, 0, 0);
   // Javascript uses the number of milliseconds since epoch. Unix timestamp is seconds since epoch.
   // ObjectId.createFromTime needs the timestamp in seconds (Unix timestamp).
   sendTime = sendTime / 1000;
@@ -94,7 +127,7 @@ async function getTodaysDailyUpdate(db) {
       { sort: { $natural: -1 } }
     )
     .catch(errorHandler);
-console.log("LAST UPDATE", lastUpdate)
+  console.log("LAST UPDATE", lastUpdate)
   return lastUpdate;
 }
 
@@ -190,10 +223,15 @@ const executeMongo = async (event, context, callback) => {
       if (chat.message.chat.type === 'private') {
         const todaysPerson = await getUpdatePerson(db);
         if (chat.message.from.id === todaysPerson.id) {
-          await addUpdate(db, chat.message.text);
+          const message = chat.message.text
+          await addUpdate(db, message);
           await sendTelegramMsg(
             `Your update has been saved, thanks ${chat.message.from.first_name}`,
             chat.message.from.id
+          );
+          await sendTelegramMsg(
+            `${chat.message.from.first_name} has submitted their update of the day. It's ${message.length} characters long.`,
+            wholeGroupChatId
           );
         } else {
           await sendTelegramMsg(
@@ -208,10 +246,7 @@ const executeMongo = async (event, context, callback) => {
         );
       }
       else if ((Math.random() * 100) < 0.5) {
-        await sendTelegramMsg(
-          `MEOW XP MEOW! Congrats ${chat.message.from.username} (${chat.message.from.username}) on the lucky xp. \n Make sure to SPAM until you get the lucky xp!`,
-          wholeGroupChatId
-        );
+        await handleLuckMessage(db, chat)
       }
 
       return callback(null, { statusCode: 200 });
