@@ -38,7 +38,6 @@ const getLuckyMessageCount = async (db, chat) => {
 const handleLuckMessage = async (db, chat) => {
 
   await storeLuckyMessage(db, chat)
-  console.log("lucky msg", chat)
   level = await getLuckyMessageCount(db, chat)
   const title = ranks[level -1]
 
@@ -224,10 +223,15 @@ const executeMongo = async (event, context, callback) => {
       if (chat.message.chat.type === 'private') {
         const todaysPerson = await getUpdatePerson(db);
         if (chat.message.from.id === todaysPerson.id) {
-          await addUpdate(db, chat.message.text);
+          const message = chat.message.text
+          await addUpdate(db, message);
           await sendTelegramMsg(
             `Your update has been saved, thanks ${chat.message.from.first_name}`,
             chat.message.from.id
+          );
+          await sendTelegramMsg(
+            `${chat.message.from.first_name} has submitted their update of the day. It's ${message.length} characters long.`,
+            wholeGroupChatId
           );
         } else {
           await sendTelegramMsg(
