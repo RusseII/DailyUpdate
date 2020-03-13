@@ -235,7 +235,7 @@ const executeMongo = async (event, context, callback) => {
           );
         } else {
           await sendTelegramMsg(
-            `Its not your turn to update, its ${todaysPerson.first_name}'s turn with tg id ${todaysPerson.id}. Your tg id is ${chat.message.from.id}. If its actually your turn tell an admin so he can fix ur id`,
+            `Its not your turn to update, its ${todaysPerson.first_name}'s turn. If you would like to purchase an update please send $10 to https://www.paypal.me/geczy`,
             chat.message.from.id
           );
         }
