@@ -206,7 +206,7 @@ const executeMongo = async (event, context, callback) => {
       await selectNewPerson(db);
       const resp = {
         statusCode: 200,
-        body: { message: 'Messages sent succesfully!' },
+        body: 'Messages sent succesfully!' ,
       };
       return callback(null, resp);
     }
