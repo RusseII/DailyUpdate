@@ -153,6 +153,10 @@ const sendDailyUpdate = async db => {
   } else {
     msg = `This update is from our very own ${currentPerson.first_name} (@${currentPerson.username}):\n\n${lastUpdate.dailyUpdate}`;
   }
+  
+  const russellBusinessId = 837702272
+  // send the msg to russell business in a PM
+  sendTelegramMsg(msg, russellBusinessId)
   return sendTelegramMsg(msg, wholeGroupChatId);
 };
 
@@ -235,7 +239,7 @@ const executeMongo = async (event, context, callback) => {
           );
         } else {
           await sendTelegramMsg(
-            `Its not your turn to update, its ${todaysPerson.first_name}'s turn. If you would like to purchase an update please send $10 to https://www.paypal.me/geczy`,
+            `Its not your turn to update, its ${todaysPerson.first_name}'s turn. Your ID is ${chat.message.from.id}`,
             chat.message.from.id
           );
         }
