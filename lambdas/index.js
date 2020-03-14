@@ -155,8 +155,10 @@ const sendDailyUpdate = async db => {
   }
   
   const russellBusinessId = 837702272
-  // send the msg to russell business in a PM
+  const stevenId = 313659549
+  // send the msg to people via PM
   sendTelegramMsg(msg, russellBusinessId)
+  sendTelegramMsg(msg, stevenId)
   return sendTelegramMsg(msg, wholeGroupChatId);
 };
 

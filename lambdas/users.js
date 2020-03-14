@@ -1,5 +1,10 @@
 const users = [
   {
+    id: 313659549,
+    first_name: 'Steven',
+    username: 'gatesyp',
+  },
+  {
     id: 303005822,
     first_name: 'matt',
     username: 'geczy',
