@@ -280,6 +280,14 @@ const executeMongo = async (event, context, callback) => {
       return callback(null, { statusCode: 200 });
     }
 
+    if (event.queryStringParameters.speak) {
+      await sendTelegramMsg(
+        event.queryStringParameters.speak,
+        wholeGroupChatId
+      )
+      return callback(null, {statusCode: 200});
+    }
+
     if (event.queryStringParameters.reminder === '1') {
       await sendReminder(db);
       const resp = {
