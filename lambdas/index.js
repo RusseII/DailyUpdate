@@ -9,6 +9,8 @@ let cachedDb = null;
 const MONGODB_URI = process.env.RUSSELL_WORK_MONGODB_URI;
 const TELEGRAM_URI = `https://api.telegram.org/bot${process.env.GATES_ONLINE_SERVER_BOT_KEY}`;
 const wholeGroupChatId = '-1001341192052';
+const russellBusinessId = 837702272
+const stevenId = 313659549
 
 const timestamp = () => new Date().toString();
 
@@ -154,8 +156,7 @@ const sendDailyUpdate = async db => {
     msg = `This update is from our very own ${currentPerson.first_name} (@${currentPerson.username}):\n\n${lastUpdate.dailyUpdate}`;
   }
   
-  const russellBusinessId = 837702272
-  const stevenId = 313659549
+
   // send the msg to people via PM
   sendTelegramMsg(msg, russellBusinessId)
   sendTelegramMsg(msg, stevenId)
@@ -225,20 +226,41 @@ const executeMongo = async (event, context, callback) => {
       } catch (e) {
         chat = event.body;
       }
+      
+      // console.log("msg here", chat)
+      // if (chat.message.chat.id === wholeGroupChatId ) {
+      //   const { message_id: id, from, text, date} = chat.message
+      //   const {first_name, last_name, id: from_id} = from
+      //   const from = `${first_name} ${last_name}`
+      //   const chatHistoryFormat = {id, type, date, edited, from, from_id, text, originalFormat: chat.message}
+
+      // }
+
 
       if (chat.message.chat.type === 'private') {
         const todaysPerson = await getUpdatePerson(db);
         if (chat.message.from.id === todaysPerson.id) {
+          console.log("pm", chat)
           const message = chat.message.text
-          await addUpdate(db, message);
-          await sendTelegramMsg(
-            `Your update has been saved, thanks ${chat.message.from.first_name}`,
-            chat.message.from.id
-          );
+      
+          if (message) {
+            await addUpdate(db, message);
+            await sendTelegramMsg(
+              `Your update has been saved, thanks ${chat.message.from.first_name}`,
+              chat.message.from.id
+            );
           await sendTelegramMsg(
             `${chat.message.from.first_name} has submitted their update of the day. It's ${message.length} characters long.`,
             wholeGroupChatId
           );
+          }
+          else {
+            console.log("msg is null")
+            await sendTelegramMsg(
+              `${chat.message.from.first_name} ALLLEEERT!!!!!!!!!!!! BAD MESSAGE. MESSAGE NOT SUBMITTED. Please submit a message with Text only.`,
+              russellBusinessId
+            );
+          }
         } else {
           await sendTelegramMsg(
             `Its not your turn to update, its ${todaysPerson.first_name}'s turn. Your ID is ${chat.message.from.id}`,
