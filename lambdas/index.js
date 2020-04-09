@@ -37,6 +37,15 @@ const getLuckyMessageCount = async (db, chat) => {
   return count;
 };
 
+
+const getUnluckyMessageCount = async (db, chat) => {
+  const count = await db
+    .collection('lucky_message')
+    .count({ "message.from.id": chat.message.from.id, unlucky:true  })
+    .catch(errorHandler);
+  return count;
+};
+
 const handleLuckMessage = async (db, chat) => {
 
   await storeLuckyMessage(db, chat)
