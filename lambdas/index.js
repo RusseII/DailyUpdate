@@ -38,22 +38,19 @@ const storeUnluckyMessage = async (db, chat) => {
     .catch(errorHandler);
 };
 
-const getLuckyMessageCount = async (db, chat) => {
-  const count = await db
+const getCombinedLuckyMessageCount = async (db, chat) => {
+  const luckyCount = await db
     .collection('lucky_message')
     .count({ "message.from.id": chat.message.from.id })
     .catch(errorHandler);
-  return count;
-};
 
-
-const getUnluckyMessageCount = async (db, chat) => {
-  const count = await db
+  const unluckyCount = await db
     .collection('lucky_message')
     .count({ "message.from.id": chat.message.from.id, unlucky: true })
     .catch(errorHandler);
-  return count;
-};
+  
+  return luckyCount - unluckyCount;
+}
 
 const handleLuckMessage = async (db, chat) => {
   await storeLuckyMessage(db, chat)
@@ -73,7 +70,7 @@ Make sure to SPAM until you get a LUCKY PROMOTION!`,
 
 const handleUnluckyMessage = async (db, chat) => {
   await storeUnluckyMessage(db, chat)
-  level = await getUnluckyMessageCount(db, chat)
+  level = await getCombinedLuckyMessageCount(db, chat)
   const title = ranks[level - 1]
 
   await sendTelegramMsg(
