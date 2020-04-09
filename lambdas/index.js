@@ -11,6 +11,8 @@ const TELEGRAM_URI = `https://api.telegram.org/bot${process.env.GATES_ONLINE_SER
 const wholeGroupChatId = '-1001341192052';
 const russellBusinessId = 837702272
 const stevenId = 313659549
+const luckyFactor = 0.7;
+const luckyEventEvery = 200;
 
 const timestamp = () => new Date().toString();
 
@@ -29,6 +31,13 @@ const storeLuckyMessage = async (db, chat) => {
     .catch(errorHandler);
 };
 
+const storeUnluckyMessage = async (db, chat) => {
+  return await db
+    .collection('lucky_message')
+    .insertOne(chat)
+    .catch(errorHandler);
+};
+
 const getLuckyMessageCount = async (db, chat) => {
   const count = await db
     .collection('lucky_message')
@@ -41,16 +50,15 @@ const getLuckyMessageCount = async (db, chat) => {
 const getUnluckyMessageCount = async (db, chat) => {
   const count = await db
     .collection('lucky_message')
-    .count({ "message.from.id": chat.message.from.id, unlucky:true  })
+    .count({ "message.from.id": chat.message.from.id, unlucky: true })
     .catch(errorHandler);
   return count;
 };
 
 const handleLuckMessage = async (db, chat) => {
-
   await storeLuckyMessage(db, chat)
   level = await getLuckyMessageCount(db, chat)
-  const title = ranks[level -1]
+  const title = ranks[level - 1]
 
   await sendTelegramMsg(
     `MEOW XP MEOW! Congrats @${chat.message.from.username} on the lucky xp. 
@@ -62,13 +70,28 @@ Make sure to SPAM until you get a LUCKY PROMOTION!`,
     wholeGroupChatId
   );
 }
+
+const handleUnluckyMessage = async (db, chat) => {
+  await storeUnluckyMessage(db, chat)
+  level = await getUnluckyMessageCount(db, chat)
+  const title = ranks[level - 1]
+
+  await sendTelegramMsg(
+    `UH OHHHH MEOW MEOW DOESN'T FEEL SO GOOD. Bad luck @${chat.message.from.username} on the UNLUCKY xp :(((.
+
+You have been DEMOTED to rank ${level} with a title of ${title}
+
+Keep spamming and you might get lucky next time!!!!`,
+    wholeGroupChatId
+  );
+}
+
 const storeUpdatePerson = async (db, person) => {
   await db
     .collection('daily_update_person')
     .insertOne(person)
     .catch(errorHandler);
 };
-
 
 const getUpdatePerson = async db => {
   const person = await db
@@ -164,7 +187,7 @@ const sendDailyUpdate = async db => {
   } else {
     msg = `This update is from our very own ${currentPerson.first_name} (@${currentPerson.username}):\n\n${lastUpdate.dailyUpdate}`;
   }
-  
+
 
   // send the msg to people via PM
   sendTelegramMsg(msg, russellBusinessId)
@@ -222,7 +245,7 @@ const executeMongo = async (event, context, callback) => {
       await selectNewPerson(db);
       const resp = {
         statusCode: 200,
-        body: 'Messages sent succesfully!' ,
+        body: 'Messages sent succesfully!',
       };
       return callback(null, resp);
     }
@@ -235,7 +258,7 @@ const executeMongo = async (event, context, callback) => {
       } catch (e) {
         chat = event.body;
       }
-      
+
       // console.log("msg here", chat)
       // if (chat.message.chat.id === wholeGroupChatId ) {
       //   const { message_id: id, from, text, date} = chat.message
@@ -251,17 +274,17 @@ const executeMongo = async (event, context, callback) => {
         if (chat.message.from.id === todaysPerson.id) {
           console.log("pm", chat)
           const message = chat.message.text
-      
+
           if (message) {
             await addUpdate(db, message);
             await sendTelegramMsg(
               `Your update has been saved, thanks ${chat.message.from.first_name}`,
               chat.message.from.id
             );
-          await sendTelegramMsg(
-            `${chat.message.from.first_name} has submitted their update of the day. It's ${message.length} characters long.`,
-            wholeGroupChatId
-          );
+            await sendTelegramMsg(
+              `${chat.message.from.first_name} has submitted their update of the day. It's ${message.length} characters long.`,
+              wholeGroupChatId
+            );
           }
           else {
             console.log("msg is null")
@@ -282,8 +305,12 @@ const executeMongo = async (event, context, callback) => {
           wholeGroupChatId
         );
       }
-      else if ((Math.random() * 100) < 0.5) {
-        await handleLuckMessage(db, chat)
+      else if ((Math.random() * luckyEventEvery) < 1) {
+        if (Math.random() < luckyFactor) {
+          await handleLuckMessage(db, chat)
+        } else {
+          handleUnluckyMessage(db, chat)
+        }
       }
 
       return callback(null, { statusCode: 200 });
@@ -294,7 +321,7 @@ const executeMongo = async (event, context, callback) => {
         event.queryStringParameters.speak,
         wholeGroupChatId
       )
-      return callback(null, {statusCode: 200});
+      return callback(null, { statusCode: 200 });
     }
 
     if (event.queryStringParameters.reminder === '1') {
