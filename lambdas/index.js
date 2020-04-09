@@ -34,7 +34,7 @@ const storeLuckyMessage = async (db, chat) => {
 const storeUnluckyMessage = async (db, chat) => {
   return await db
     .collection('lucky_message')
-    .insertOne(chat)
+    .insertOne({chat, unlucky: true})
     .catch(errorHandler);
 };
 
