@@ -34,21 +34,21 @@ const storeLuckyMessage = async (db, chat) => {
 const storeUnluckyMessage = async (db, chat) => {
   return await db
     .collection('lucky_message')
-    .insertOne({...chat, unlucky: true})
+    .insertOne({ ...chat, unlucky: true })
     .catch(errorHandler);
 };
 
-const getCombinedLuckyMessageCount = async (db, chat) => {
+const getCombinedLuckyMessageCount = async (db, userId) => {
   const luckyCount = await db
     .collection('lucky_message')
-    .count({ "message.from.id": chat.message.from.id })
+    .count({ "message.from.id": userId })
     .catch(errorHandler);
 
   const unluckyCount = await db
     .collection('lucky_message')
-    .count({ "message.from.id": chat.message.from.id, unlucky: true })
+    .count({ "message.from.id": userId, unlucky: true })
     .catch(errorHandler);
-  
+
   return luckyCount - unluckyCount;
 }
 
@@ -74,7 +74,7 @@ const handleUnluckyMessage = async (db, chat) => {
   const title = ranks[Math.max(0, level - 1)]
 
   await sendTelegramMsg(
-    `UH OHHHH MEOW MEOW DOESN'T FEEL SO GOOD. Bad luck @${chat.message.from.username} on the UNLUCKY xp :(((.
+    `UH OHHHH meow meow doesn't feel so good. Bad luck @${chat.message.from.username} on the UNLUCKY xp :(((.
 
 You have been DEMOTED to rank ${level} with a title of ${title}
 
@@ -97,6 +97,43 @@ const getUpdatePerson = async db => {
     .catch(errorHandler);
 
   return person;
+};
+
+const sendTelegramMsg = async (text, chatId) => {
+  const headers = { 'Content-Type': 'application/json' };
+  const msg = { text, chat_id: chatId };
+  const resp = await fetch(`${TELEGRAM_URI}/sendMessage`, {
+    method: 'POST',
+    body: JSON.stringify(msg),
+    headers,
+  }).catch(err => console.log(err));
+  if (resp.status !== 200) console.log(resp);
+  return resp;
+};
+
+const sendRanks = async db => {
+  let message = 'Who is the luckiest memer in the chat?\n\n';
+  const obj = [];
+
+  await Promise.all(
+    users.map(async user => {
+      const level = getCombinedLuckyMessageCount(db, user.id);
+      const title = ranks[level - 1];
+      obj.push({ id: user.name, level, title });
+    })
+  );
+
+  obj.sort((a, b) => {
+    return a.level - b.level;
+  });
+
+  let order = 1;
+  obj.forEach(object => {
+    message += `${order}. ${object.name} :: ${object.title}`;
+    order += 1;
+  });
+
+  sendTelegramMsg(message, wholeGroupChatId);
 };
 
 async function connectToDatabase() {
@@ -160,19 +197,8 @@ async function getTodaysDailyUpdate(db) {
     .catch(errorHandler);
   console.log("LAST UPDATE", lastUpdate)
   return lastUpdate;
-}
-
-const sendTelegramMsg = async (text, chatId) => {
-  const headers = { 'Content-Type': 'application/json' };
-  const msg = { text, chat_id: chatId };
-  const resp = await fetch(`${TELEGRAM_URI}/sendMessage`, {
-    method: 'POST',
-    body: JSON.stringify(msg),
-    headers,
-  }).catch(err => console.log(err));
-  if (resp.status !== 200) console.log(resp);
-  return resp;
 };
+
 
 const sendDailyUpdate = async db => {
   const lastUpdate = await getTodaysDailyUpdate(db);
@@ -184,7 +210,6 @@ const sendDailyUpdate = async db => {
   } else {
     msg = `This update is from our very own ${currentPerson.first_name} (@${currentPerson.username}):\n\n${lastUpdate.dailyUpdate}`;
   }
-
 
   // send the msg to people via PM
   sendTelegramMsg(msg, russellBusinessId)
@@ -282,8 +307,7 @@ const executeMongo = async (event, context, callback) => {
               `${chat.message.from.first_name} has submitted their update of the day. It's ${message.length} characters long.`,
               wholeGroupChatId
             );
-          }
-          else {
+          } else {
             console.log("msg is null")
             await sendTelegramMsg(
               `${chat.message.from.first_name} ALLLEEERT!!!!!!!!!!!! BAD MESSAGE. MESSAGE NOT SUBMITTED. Please submit a message with Text only.`,
@@ -301,12 +325,13 @@ const executeMongo = async (event, context, callback) => {
           '@RusseII @geczy @gatesyq @memerson @ti0py @cr0wmium @sc4s2cg @gdog5 @ju1ie @gatesyp',
           wholeGroupChatId
         );
-      }
-      else if ((Math.random() * luckyEventEvery) < 1) {
+      } else if (chat.message.text && chat.message.text.toLowerCase().includes('rank')) {
+        await sendRanks(db);
+      } else if (Math.random() * luckyEventEvery < 1) {
         if (Math.random() < luckyFactor) {
-          await handleLuckMessage(db, chat)
+          await handleLuckMessage(db, chat);
         } else {
-          handleUnluckyMessage(db, chat)
+          handleUnluckyMessage(db, chat);
         }
       }
 
@@ -314,10 +339,7 @@ const executeMongo = async (event, context, callback) => {
     }
 
     if (event.queryStringParameters.speak) {
-      await sendTelegramMsg(
-        event.queryStringParameters.speak,
-        wholeGroupChatId
-      )
+      await sendTelegramMsg(event.queryStringParameters.speak, wholeGroupChatId);
       return callback(null, { statusCode: 200 });
     }
 
