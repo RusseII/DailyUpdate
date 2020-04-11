@@ -3,6 +3,7 @@ const fetch = require('node-fetch');
 const { MongoClient, ObjectID } = require('mongodb');
 const { users } = require('./users');
 const { ranks } = require('./ranks');
+const { luckyMessages, unluckyMessages } = require('./messages');
 require('dotenv').config();
 
 let cachedDb = null;
@@ -22,6 +23,16 @@ const errorHandler = err => {
 };
 function getRandomPerson() {
   return users[Math.floor(Math.random() * users.length)];
+}
+
+function getRandomUnluckyMessage(username, level, title) {
+  const unluckyMessagesArray = unluckyMessages(username, level, title)
+  return unluckyMessagesArray[Math.floor(Math.random() * unluckyMessagesArray.length)]
+}
+
+function getRandomLuckyMessage(username, level, title) {
+  const luckyMessagesArray = luckyMessages(username, level, title)
+  return luckyMessagesArray[Math.floor(Math.random() * luckyMessagesArray.length)]
 }
 
 const storeLuckyMessage = async (db, chat) => {
@@ -56,14 +67,11 @@ const handleLuckMessage = async (db, chat) => {
   await storeLuckyMessage(db, chat)
   level = await getCombinedLuckyMessageCount(db, chat.message.from.id)
   const title = ranks[Math.min(ranks.size() - 1, level - 1)]
+  const message = getRandomUnluckyMessage(chat.message.from.username, level, title)
+
 
   await sendTelegramMsg(
-    `MEOW XP MEOW! Congrats @${chat.message.from.username} on the lucky xp. 
-
-You have been promoted to rank ${level} with a title of ${title}
-
-Make sure to SPAM until you get a LUCKY PROMOTION!`,
-
+    message,
     wholeGroupChatId
   );
 }
@@ -72,13 +80,9 @@ const handleUnluckyMessage = async (db, chat) => {
   await storeUnluckyMessage(db, chat)
   level = await getCombinedLuckyMessageCount(db, chat.message.from.id)
   const title = ranks[Math.max(0, level - 1)]
+  const message = getRandomUnluckyMessage(chat.message.from.username, level, title)
 
-  await sendTelegramMsg(
-    `UH OHHHH meow meow doesn't feel so good. Bad luck @${chat.message.from.username} on the UNLUCKY xp :(((.
-
-You have been DEMOTED to rank ${level} with a title of ${title}
-
-Keep spamming and you might get lucky next time!!!!`,
+  await sendTelegramMsg(message, 
     wholeGroupChatId
   );
 }
