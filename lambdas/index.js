@@ -124,7 +124,7 @@ const sendRanks = async db => {
   );
 
   obj.sort((a, b) => {
-    return a.level - b.level;
+    return b.level - a.level;
   });
 
   let order = 1;
