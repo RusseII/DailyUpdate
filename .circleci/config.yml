@@ -21,4 +21,10 @@ jobs:
           command: |
             sudo apt-get install python-dev python-pip
             sudo pip install awscli
-      - run: cd lambdas && yarn deploy
+
+      - deploy:
+          name: Deploy Lambda
+          command: |
+            if [ "${CIRCLE_BRANCH}" == "master" ]; then
+             cd lambdas && yarn deploy
+            fi
