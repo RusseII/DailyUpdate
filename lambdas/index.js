@@ -117,7 +117,7 @@ const sendRanks = async db => {
 
   await Promise.all(
     users.map(async user => {
-      const level = getCombinedLuckyMessageCount(db, user.id);
+      const level = await getCombinedLuckyMessageCount(db, user.id);
       const title = ranks[level - 1];
       obj.push({ id: user.name, level, title });
     })
