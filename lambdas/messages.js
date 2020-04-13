@@ -1,4 +1,4 @@
-export const luckyMesages = (username, level, title) => [
+const luckyMesages = (username, level, title) => [
     `DING DING DING @${username} you're a big winner!! GO celebeBRATE eaT A cookie!!! DRNK a big aocohol GLASS. u deserve it!!!`,
     `You know when something feels so good but you're afraid to feel good about it? So you kinda hold back? Everyone says, Congratulations, you must be so happy. And you say something stupid like, I'm just doing what little I can with what little I have. Well, this is that feeling. @${username} Congrats on the XP. Rank ${level} ${title}`,
     `HUFF, PUFFF, WOOOOOOOAAAAAAHHHHH !!!!! @${username} got MORE lucky xp AGAIN !!!!! Make sure to SLAM so you can be as lucky as @${username}!!!!!!!!!!! Rank ${level} ${title}`,
@@ -36,7 +36,7 @@ Make sure to SPAM until you get a LUCKY PROMOTION!`
 ]
 
 
-export const unluckyMessags = () => [` @${username} never surrender your XP to the fateful limitations others have placed on their own lives. The vision of your true XP does not reside within the blinkered outlook of the naysayers and the doom prophets. Judge not by their words, but accept advice based on the evidence of actual results. Do not be surprised should you find a complete absence of anything mystical or miraculous in the manifested XP of those who are so eager to advise you. Friends and family who suffer the lack of abundance, joy, love, fulfillment and prosperity in their own lives really have no business imposing their self-limiting beliefs on your XP experience. Now you are rank ${level} ${title}`,
+const unluckyMessags = () => [` @${username} never surrender your XP to the fateful limitations others have placed on their own lives. The vision of your true XP does not reside within the blinkered outlook of the naysayers and the doom prophets. Judge not by their words, but accept advice based on the evidence of actual results. Do not be surprised should you find a complete absence of anything mystical or miraculous in the manifested XP of those who are so eager to advise you. Friends and family who suffer the lack of abundance, joy, love, fulfillment and prosperity in their own lives really have no business imposing their self-limiting beliefs on your XP experience. Now you are rank ${level} ${title}`,
 `UHOH! You've been talking too much @${username}!! You have been demoted to rank ${level} with the title of ${title}. Get out of here and back to work!!'`,
 `UH oh.,, I REALLY didn’t like that message, @${username}. You’ve been DEMOTED to level ${level} ${title}. Get back in the TRASHCAN!!!`,
 `uhm @${username}, that didn't quite hit the mark.. meybe try again?? better luck next time?? idk u might be forever doomed, ah well. Enjoy rank ${level} ${title}`,
