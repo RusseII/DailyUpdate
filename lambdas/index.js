@@ -325,10 +325,7 @@ const executeMongo = async (event, context, callback) => {
           );
         }
       } else if (chat.message.text && chat.message.text.toLowerCase().includes('@everyone')) {
-        await sendTelegramMsg(
-          '@RusseII @geczy @gatesyq @memerson @ti0py @cr0wmium @sc4s2cg @gdog5 @ju1ie @gatesyp',
-          wholeGroupChatId
-        );
+        await sendTelegramMsg(users.map(user => `@${user.username}`).split(' '), wholeGroupChatId);
       } else if (chat.message.text && chat.message.text.toLowerCase().includes('rank')) {
         await sendRanks(db);
       } else if (Math.random() * luckyEventEvery < 1) {
