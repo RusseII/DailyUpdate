@@ -66,8 +66,8 @@ const getCombinedLuckyMessageCount = async (db, userId) => {
 const handleLuckMessage = async (db, chat) => {
   await storeLuckyMessage(db, chat)
   level = await getCombinedLuckyMessageCount(db, chat.message.from.id)
-  const title = ranks[Math.min(ranks.size() - 1, level - 1)]
-  const message = getRandomUnluckyMessage(chat.message.from.username, level, title)
+  const title = ranks[Math.min(ranks.length - 1, level - 1)]
+  const message = getRandomLuckyMessage(chat.message.from.username, level, title)
 
 
   await sendTelegramMsg(
