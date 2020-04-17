@@ -7,7 +7,7 @@ const users = [
   {
     id: 303005822,
     first_name: 'matt',
-    username: 'geczy',
+    username: 'mattpew',
   },
   // {
   //   id: 316876549,
@@ -27,7 +27,7 @@ const users = [
   {
     id: 320247642,
     first_name: 'Peti',
-    username: 'sc4s2cg',
+    username: 'petiepoo',
   },
   {
     id: 316190324,
