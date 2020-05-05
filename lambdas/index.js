@@ -133,7 +133,7 @@ const sendRanks = async db => {
 
   let order = 1;
   obj.forEach(object => {
-    message += `${order}. ${object.name} :: ${object.title}\n`;
+    message += `${order}. ${object.name} :: ${object.title || object.level}\n`;
     order += 1;
   });
 
