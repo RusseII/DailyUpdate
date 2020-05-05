@@ -244,9 +244,7 @@ const selectNewPerson = async db => {
     wholeGroupChatId
   );
   return sendTelegramMsg(
-    `You've been selected! Please post an update tomorrow (NOT today).
-    \n\n
-    To post an update, just send the full message to me when you're ready.`,
+    `You've been selected! Please write to me about your present life and I will share it with everyone tomorrow at 8pm (:`,
     newPerson.id
   );
 };
