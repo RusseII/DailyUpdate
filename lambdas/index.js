@@ -10,8 +10,9 @@ let cachedDb = null;
 const MONGODB_URI = process.env.RUSSELL_WORK_MONGODB_URI;
 const TELEGRAM_URI = `https://api.telegram.org/bot${process.env.GATES_ONLINE_SERVER_BOT_KEY}`;
 const wholeGroupChatId = '-1001341192052';
-const russellBusinessId = 837702272
-const stevenId = 313659549
+const russellBusinessId = 837702272;
+const stevenId = 313659549;
+const kaiId = 316190324;
 const luckyFactor = 0.7;
 const luckyEventEvery = 200;
 
@@ -217,8 +218,9 @@ const sendDailyUpdate = async db => {
   }
 
   // send the msg to people via PM
-  sendTelegramMsg(msg, russellBusinessId)
-  sendTelegramMsg(msg, stevenId)
+  sendTelegramMsg(msg, russellBusinessId);
+  sendTelegramMsg(msg, stevenId);
+  sendTelegramMsg(msg, kaiId);
   return sendTelegramMsg(msg, wholeGroupChatId);
 };
 
