@@ -318,7 +318,9 @@ const executeMongo = async (event, context, callback) => {
           if (message) {
             if (message === 'pass') {
               passLogic(chat, db)
+             
             }
+            else {
             await addUpdate(db, message);
             await sendTelegramMsg(
               `Your update has been saved, thanks ${chat.message.from.first_name}`,
@@ -328,7 +330,7 @@ const executeMongo = async (event, context, callback) => {
               `${chat.message.from.first_name} has submitted their update of the day. It's ${message.length} characters long.`,
               wholeGroupChatId
             );
-          } else {
+          }} else {
             console.log("msg is null")
             await sendTelegramMsg(
               `${chat.message.from.first_name} ALLLEEERT!!!!!!!!!!!! BAD MESSAGE. MESSAGE NOT SUBMITTED. Please submit a message with Text only.`,
