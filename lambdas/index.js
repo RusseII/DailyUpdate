@@ -188,6 +188,12 @@ const passLogic = async (chat, db) => {
     `${chat.message.from.first_name} has decided to pass their turn.`,
     wholeGroupChatId
   );
+
+  await sendTelegramMsg(
+    `Aww, you just passed your update! Looking forward to next time ${chat.message.from.first_name}`,
+    chat.message.from.id
+  );
+
   selectNewPerson(db)
 }
 
