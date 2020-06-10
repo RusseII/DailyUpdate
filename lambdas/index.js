@@ -183,6 +183,14 @@ async function addUpdate(db, dailyUpdate) {
   return row;
 }
 
+const passLogic = async (chat, db) => {
+  await sendTelegramMsg(
+    `${chat.message.from.first_name} has decided to pass their turn.`,
+    wholeGroupChatId
+  );
+  selectNewPerson(db)
+}
+
 async function getTodaysDailyUpdate(db) {
   console.log('=> query database');
   let sendTime = new Date();
@@ -207,13 +215,7 @@ async function getTodaysDailyUpdate(db) {
 };
 
 
-const passLogic = (chat, db) => {
-  await sendTelegramMsg(
-    `${chat.message.from.first_name} has decided to pass their turn.`,
-    wholeGroupChatId
-  );
-  selectNewPerson(db)
-}
+
 
 const sendDailyUpdate = async db => {
   const lastUpdate = await getTodaysDailyUpdate(db);
