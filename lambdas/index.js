@@ -207,6 +207,14 @@ async function getTodaysDailyUpdate(db) {
 };
 
 
+const passLogic = (chat, db) => {
+  await sendTelegramMsg(
+    `${chat.message.from.first_name} has decided to pass their turn.`,
+    wholeGroupChatId
+  );
+  selectNewPerson(db)
+}
+
 const sendDailyUpdate = async db => {
   const lastUpdate = await getTodaysDailyUpdate(db);
   console.log(lastUpdate)
@@ -248,7 +256,9 @@ const selectNewPerson = async db => {
     wholeGroupChatId
   );
   return sendTelegramMsg(
-    `You've been selected! Please write to me about your present life and I will share it with everyone tomorrow at 8pm (:`,
+    `You've been selected! Please write to me about your present life and I will share it with everyone tomorrow at 8pm (:
+      
+      If you do not want to post, type 'pass' for your update & it will move to the next person.`,
     newPerson.id
   );
 };
@@ -304,6 +314,9 @@ const executeMongo = async (event, context, callback) => {
           const message = chat.message.text
 
           if (message) {
+            if (message === 'pass') {
+              passLogic(chat, db)
+            }
             await addUpdate(db, message);
             await sendTelegramMsg(
               `Your update has been saved, thanks ${chat.message.from.first_name}`,
