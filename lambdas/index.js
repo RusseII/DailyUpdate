@@ -13,7 +13,7 @@ const wholeGroupChatId = '-1001341192052';
 const russellBusinessId = 837702272;
 const stevenId = 313659549;
 const kaiId = 316190324;
-const luckyFactor = 0.7;
+const luckyFactor = 0.5;
 const luckyEventEvery = 200;
 
 const timestamp = () => new Date().toString();
@@ -82,6 +82,7 @@ const handleUnluckyMessage = async (db, chat) => {
   level = await getCombinedLuckyMessageCount(db, chat.message.from.id)
   const title = ranks[Math.max(0, level - 1)]
   const message = getRandomUnluckyMessage(chat.message.from.username, level, title)
+  console.log("message", message)
 
   await sendTelegramMsg(message, 
     wholeGroupChatId
@@ -333,7 +334,8 @@ const executeMongo = async (event, context, callback) => {
         if (Math.random() < luckyFactor) {
           await handleLuckMessage(db, chat);
         } else {
-          handleUnluckyMessage(db, chat);
+          console.log("unlucky")
+          await handleUnluckyMessage(db, chat);
         }
       }
 

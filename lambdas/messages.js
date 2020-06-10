@@ -36,7 +36,7 @@ Make sure to SPAM until you get a LUCKY PROMOTION!`
 ]
 
 
-const unluckyMessags = () => [` @${username} never surrender your XP to the fateful limitations others have placed on their own lives. The vision of your true XP does not reside within the blinkered outlook of the naysayers and the doom prophets. Judge not by their words, but accept advice based on the evidence of actual results. Do not be surprised should you find a complete absence of anything mystical or miraculous in the manifested XP of those who are so eager to advise you. Friends and family who suffer the lack of abundance, joy, love, fulfillment and prosperity in their own lives really have no business imposing their self-limiting beliefs on your XP experience. Now you are rank ${level} ${title}`,
+const unluckyMessages = (username, level, title) => [` @${username} never surrender your XP to the fateful limitations others have placed on their own lives. The vision of your true XP does not reside within the blinkered outlook of the naysayers and the doom prophets. Judge not by their words, but accept advice based on the evidence of actual results. Do not be surprised should you find a complete absence of anything mystical or miraculous in the manifested XP of those who are so eager to advise you. Friends and family who suffer the lack of abundance, joy, love, fulfillment and prosperity in their own lives really have no business imposing their self-limiting beliefs on your XP experience. Now you are rank ${level} ${title}`,
 `UHOH! You've been talking too much @${username}!! You have been demoted to rank ${level} with the title of ${title}. Get out of here and back to work!!'`,
 `UH oh.,, I REALLY didn’t like that message, @${username}. You’ve been DEMOTED to level ${level} ${title}. Get back in the TRASHCAN!!!`,
 `uhm @${username}, that didn't quite hit the mark.. meybe try again?? better luck next time?? idk u might be forever doomed, ah well. Enjoy rank ${level} ${title}`,
@@ -99,4 +99,4 @@ Maybe if you were a more honest spammer like @ti0py this wouldn't have happened.
 
 module.exports.luckyMessages = luckyMesages;
 
-module.exports.unluckyMessages = unluckyMessags;
+module.exports.unluckyMessages = unluckyMessages;
