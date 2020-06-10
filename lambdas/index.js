@@ -84,7 +84,7 @@ const handleUnluckyMessage = async (db, chat) => {
   const message = getRandomUnluckyMessage(chat.message.from.username, level, title)
   console.log("message", message)
 
-  await sendTelegramMsg(message, 
+  await sendTelegramMsg(message,
     wholeGroupChatId
   );
 }
@@ -124,7 +124,7 @@ const sendRanks = async db => {
   await Promise.all(
     users.map(async user => {
       let level = await getCombinedLuckyMessageCount(db, user.id);
-      level = (level - 1) < 0 ? 0 : (level -1);
+      level = (level - 1) < 0 ? 0 : (level - 1);
       const title = level > (ranks.length - 1) ? ranks[ranks.length - 1] : ranks[level];
       obj.push({ name: user.first_name, level, title });
     })
@@ -318,19 +318,20 @@ const executeMongo = async (event, context, callback) => {
           if (message) {
             if (message === 'pass') {
               passLogic(chat, db)
-             
+
             }
             else {
-            await addUpdate(db, message);
-            await sendTelegramMsg(
-              `Your update has been saved, thanks ${chat.message.from.first_name}`,
-              chat.message.from.id
-            );
-            await sendTelegramMsg(
-              `${chat.message.from.first_name} has submitted their update of the day. It's ${message.length} characters long.`,
-              wholeGroupChatId
-            );
-          }} else {
+              await addUpdate(db, message);
+              await sendTelegramMsg(
+                `Your update has been saved, thanks ${chat.message.from.first_name}`,
+                chat.message.from.id
+              );
+              await sendTelegramMsg(
+                `${chat.message.from.first_name} has submitted their update of the day. It's ${message.length} characters long.`,
+                wholeGroupChatId
+              );
+            }
+          } else {
             console.log("msg is null")
             await sendTelegramMsg(
               `${chat.message.from.first_name} ALLLEEERT!!!!!!!!!!!! BAD MESSAGE. MESSAGE NOT SUBMITTED. Please submit a message with Text only.`,
