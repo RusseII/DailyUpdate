@@ -322,7 +322,7 @@ const executeMongo = async (event, context, callback) => {
           const message = chat.message.text
 
           if (message) {
-            if (message === 'pass') {
+            if (['pass', 'next', 'skip', 'no thanks', 'please next person', 'i am not well'].includes(message.toLowerCase())) {
               passLogic(chat, db)
 
             }
