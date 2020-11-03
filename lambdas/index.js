@@ -194,7 +194,7 @@ const passLogic = async (chat, db) => {
     chat.message.from.id
   );
 
-  selectNewPerson(db)
+  return selectNewPerson(db)
 }
 
 async function getTodaysDailyUpdate(db) {
@@ -323,7 +323,7 @@ const executeMongo = async (event, context, callback) => {
 
           if (message) {
             if (['pass', 'next', 'skip', 'no thanks', 'please next person', 'i am not well'].includes(message.toLowerCase())) {
-              passLogic(chat, db)
+              await passLogic(chat, db)
 
             }
             else {
