@@ -4,11 +4,6 @@ const users = [
     first_name: 'Steven',
     username: 'gatesyp',
   },
-  {
-    id: 303005822,
-    first_name: 'matt',
-    username: 'mattpew',
-  },
   // {
   //   id: 316876549,
   //   first_name: 'rusel',
