@@ -13,6 +13,7 @@ const wholeGroupChatId = '-1001341192052';
 const russellBusinessId = 837702272;
 const stevenId = 313659549;
 const kaiId = 316190324;
+const mattId = 303005822;
 const luckyFactor = 0.5;
 const luckyEventEvery = 200;
 
@@ -237,6 +238,7 @@ const sendDailyUpdate = async db => {
   // send the msg to people via PM
   sendTelegramMsg(msg, russellBusinessId);
   sendTelegramMsg(msg, stevenId);
+  sendTelegramMsg(msg, mattId);
   sendTelegramMsg(msg, kaiId);
   return sendTelegramMsg(msg, wholeGroupChatId);
 };
